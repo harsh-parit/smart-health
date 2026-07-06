@@ -12,10 +12,22 @@ import VisionModal from './components/VisionModal';
 import Footer from './components/Footer';
 import LoginPage from './components/LoginPage';
 import RoleSelectionPage from './components/RoleSelectionPage';
+import CitizenDashboard from './components/CitizenDashboard';
+import AshaDashboard from './components/AshaDashboard';
+import DoctorDashboard from './components/DoctorDashboard';
+import DhoDashboard from './components/DhoDashboard';
 import { ActiveModalType } from './types';
 
 export default function App() {
-  const [view, setView] = useState<'landing' | 'login' | 'role-selection'>('landing');
+  const [view, setView] = useState<
+    | 'landing'
+    | 'login'
+    | 'role-selection'
+    | 'citizen-dashboard'
+    | 'asha-dashboard'
+    | 'doctor-dashboard'
+    | 'dho-dashboard'
+  >('landing');
   const [activeModal, setActiveModal] = useState<ActiveModalType>(null);
   
   // Custom metadata from AI Studio context
@@ -72,6 +84,40 @@ export default function App() {
       {view === 'role-selection' && (
         <RoleSelectionPage 
           onBackToLogin={() => setView('login')} 
+          onLogout={() => setView('landing')} 
+          onSelectRole={(roleId) => {
+            if (roleId === 'citizen') setView('citizen-dashboard');
+            else if (roleId === 'asha') setView('asha-dashboard');
+            else if (roleId === 'doctor') setView('doctor-dashboard');
+            else if (roleId === 'dho') setView('dho-dashboard');
+          }}
+        />
+      )}
+
+      {view === 'citizen-dashboard' && (
+        <CitizenDashboard 
+          onBackToRoles={() => setView('role-selection')} 
+          onLogout={() => setView('landing')} 
+        />
+      )}
+
+      {view === 'asha-dashboard' && (
+        <AshaDashboard 
+          onBackToRoles={() => setView('role-selection')} 
+          onLogout={() => setView('landing')} 
+        />
+      )}
+
+      {view === 'doctor-dashboard' && (
+        <DoctorDashboard 
+          onBackToRoles={() => setView('role-selection')} 
+          onLogout={() => setView('landing')} 
+        />
+      )}
+
+      {view === 'dho-dashboard' && (
+        <DhoDashboard 
+          onBackToRoles={() => setView('role-selection')} 
           onLogout={() => setView('landing')} 
         />
       )}

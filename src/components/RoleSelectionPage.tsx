@@ -10,6 +10,7 @@ import { User, Users, Activity, Landmark, ArrowLeft, LogOut, Info, AlertTriangle
 interface RoleSelectionPageProps {
   onBackToLogin: () => void;
   onLogout: () => void;
+  onSelectRole: (roleId: 'citizen' | 'asha' | 'doctor' | 'dho') => void;
 }
 
 interface RoleCard {
@@ -23,8 +24,7 @@ interface RoleCard {
   accent: string;
 }
 
-export default function RoleSelectionPage({ onBackToLogin, onLogout }: RoleSelectionPageProps) {
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+export default function RoleSelectionPage({ onBackToLogin, onLogout, onSelectRole }: RoleSelectionPageProps) {
 
   const roles: RoleCard[] = [
     {
@@ -70,7 +70,7 @@ export default function RoleSelectionPage({ onBackToLogin, onLogout }: RoleSelec
   ];
 
   const handleRoleClick = (role: RoleCard) => {
-    setSelectedRole(role.title);
+    onSelectRole(role.id as 'citizen' | 'asha' | 'doctor' | 'dho');
   };
 
   return (
@@ -150,60 +150,6 @@ export default function RoleSelectionPage({ onBackToLogin, onLogout }: RoleSelec
           ))}
         </div>
       </main>
-
-      {/* Floating alert backdrop for "Coming in next sprint" */}
-      <AnimatePresence>
-        {selectedRole && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedRole(null)}
-              className="absolute inset-0 bg-slate-950/20 backdrop-blur-xs"
-            />
-            
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 15 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="relative bg-white border border-slate-100 rounded-[2rem] p-6 sm:p-8 max-w-sm w-full shadow-2xl z-10 text-center space-y-4"
-            >
-              <button
-                onClick={() => setSelectedRole(null)}
-                className="absolute top-4 right-4 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full"
-              >
-                <X className="w-4 h-4" />
-              </button>
-
-              <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mx-auto text-amber-500 border border-amber-100">
-                <Info className="w-7 h-7" />
-              </div>
-
-              <div className="space-y-1">
-                <h4 className="font-display font-bold text-lg text-slate-800">
-                  {selectedRole} Workspace
-                </h4>
-                <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider font-mono">
-                  Module Coming in Next Sprint
-                </p>
-              </div>
-
-              <p className="text-xs text-slate-400 leading-relaxed">
-                As per the strict community roadmap, clinical authentication logic and sandbox database schemas are complete. Direct integration interfaces are arriving in the next release sprint.
-              </p>
-
-              <button
-                onClick={() => setSelectedRole(null)}
-                className="w-full bg-slate-900 text-white font-semibold py-2.5 px-4 rounded-xl text-xs hover:bg-slate-800 transition-all shadow-md active:scale-95"
-              >
-                Return to Selection
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* Standard bottom specs banner */}
       <footer className="max-w-5xl mx-auto w-full text-center relative z-10 pt-12">
