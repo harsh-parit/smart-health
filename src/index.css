@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Outfit", sans-serif;
+}
+
+/* Material Design 3 state layer & soft shadow utilities */
+.state-layer-hover {
+  position: relative;
+}
+.state-layer-hover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.state-layer-hover:hover::after {
+  opacity: 0.08;
+}
+.state-layer-hover:active::after {
+  opacity: 0.12;
+}
+

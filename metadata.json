@@ -1,0 +1,6 @@
+{
+  "name": "Smart Health AI",
+  "description": "AI-Powered Rural Healthcare Intelligence Platform",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
