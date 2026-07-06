@@ -22,7 +22,14 @@ import {
   File,
   Image,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Search,
+  Filter,
+  Calendar,
+  ChevronRight,
+  Clock,
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react';
 
 interface CitizenDashboardProps {
@@ -42,8 +49,75 @@ export default function CitizenDashboard({ onBackToRoles, onLogout }: CitizenDas
   const [bodyArea, setBodyArea] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [errors, setErrors] = useState<{ symptoms?: string; duration?: string; severity?: string }>({});
-  const [submissions, setSubmissions] = useState<any[]>([]);
+  // Pre-populate with high quality sample reports representing citizen submissions
+  const [submissions, setSubmissions] = useState<any[]>([
+    {
+      id: 'RP-8120',
+      symptoms: 'Severe migraine headache with acute nausea and extreme sensitivity to light. Pain is throbbing and focused on the left temple area.',
+      duration: '1–3 Days',
+      severity: 'High',
+      bodyArea: 'Head / Mind',
+      additionalNotes: 'Have a history of seasonal migraines but this is significantly more severe. Regular painkillers are not helping.',
+      date: 'Jul 4, 2026',
+      time: '09:45 AM',
+      status: 'Reviewed',
+      doctorNotes: 'Patient describes acute unilateral throbbing headache consistent with severe migraine with aura. Administered local clinical pain alleviation guidelines. Suggested keeping a dark-room rest schedule and monitoring blood pressure. ASHA worker to follow up in 24 hours.',
+      patientSummary: 'Male, 29 Years • Sector 3 Rural Outpost',
+      documents: [
+        { name: 'Asha_Initial_Vitals_Log.pdf', type: 'application/pdf', size: '1.2 MB', date: 'Jul 4, 2026' }
+      ],
+      timeline: [
+        { label: 'Symptom Report Submitted', date: 'Jul 4, 2026', time: '09:45 AM', active: true, desc: 'Citizen registered acute symptoms' },
+        { label: 'Assigned to Community Health Worker', date: 'Jul 4, 2026', time: '10:15 AM', active: true, desc: 'ASHA worker dispatched for vitals verification' },
+        { label: 'Reviewed by District Medical Officer', date: 'Jul 4, 2026', time: '02:30 PM', active: true, desc: 'Dr. Anita Roy approved standard migraine care protocol' }
+      ]
+    },
+    {
+      id: 'RP-7901',
+      symptoms: 'Persistent dry cough with mild chest tightness and low-grade fever in the evenings.',
+      duration: '1 Week',
+      severity: 'Medium',
+      bodyArea: 'Chest / Respiratory',
+      additionalNotes: 'No known allergies. Cough is worse at night when lying down.',
+      date: 'Jun 28, 2026',
+      time: '04:15 PM',
+      status: 'Completed',
+      doctorNotes: 'Mild broncho-spasm suspected. Standard allergy relief and bronchodilator prescription shared. Patient reports full symptom resolution upon follow-up.',
+      patientSummary: 'Male, 29 Years • Sector 3 Rural Outpost',
+      documents: [
+        { name: 'Prescription_Jun28.png', type: 'image/png', size: '2.4 MB', date: 'Jun 28, 2026' }
+      ],
+      timeline: [
+        { label: 'Symptom Report Submitted', date: 'Jun 28, 2026', time: '04:15 PM', active: true, desc: 'Dry cough symptoms registered' },
+        { label: 'ASHA Home Consultation Scheduled', date: 'Jun 29, 2026', time: '10:00 AM', active: true, desc: 'ASHA worker completed clinical vitals collection' },
+        { label: 'Care Plan Completed', date: 'Jun 30, 2026', time: '05:00 PM', active: true, desc: 'Full recovery reported by patient' }
+      ]
+    },
+    {
+      id: 'RP-6542',
+      symptoms: 'Slight skin irritation, redness and itching around the forearm area after agricultural farm work.',
+      duration: 'Today',
+      severity: 'Low',
+      bodyArea: 'Skin / External',
+      additionalNotes: 'No previous skin allergies. May have touched wild grass.',
+      date: 'May 15, 2026',
+      time: '11:20 AM',
+      status: 'Completed',
+      doctorNotes: 'Contact dermatitis suspected. Prescribed topical soothing calamine lotion. Recommended avoiding direct exposure to field grass without protective sleeves.',
+      patientSummary: 'Male, 29 Years • Sector 3 Rural Outpost',
+      documents: [],
+      timeline: [
+        { label: 'Symptom Report Submitted', date: 'May 15, 2026', time: '11:20 AM', active: true, desc: 'Skin irritation logged' },
+        { label: 'Prescription Issued', date: 'May 15, 2026', time: '12:30 PM', active: true, desc: 'District clinic issued dermatitis care lotion' }
+      ]
+    }
+  ]);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+
+  // Search, filter, and selected report views
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterOption, setFilterOption] = useState<'Newest' | 'Oldest' | 'High' | 'Medium' | 'Low'>('Newest');
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
   // Document Upload state variables
   const [isUploadingDocs, setIsUploadingDocs] = useState(false);
@@ -94,16 +168,24 @@ export default function CitizenDashboard({ onBackToRoles, onLogout }: CitizenDas
 
     setErrors({});
     
-    // Add custom local submission
+    // Add custom local submission with full report fields
     const newRecord = {
-      id: `REC-${Date.now()}`,
+      id: `RP-${Math.floor(1000 + Math.random() * 9000)}`,
       symptoms,
       duration,
       severity,
-      bodyArea: bodyArea || 'N/A',
+      bodyArea: bodyArea || 'General',
       additionalNotes: additionalNotes || 'None',
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      status: 'Pending',
+      doctorNotes: 'Awaiting clinical review from the community health team. An ASHA worker will verify your vitals shortly.',
+      patientSummary: 'Male, 29 Years • Sector 3 Rural Outpost',
+      documents: selectedFile ? [{ name: selectedFile.name, type: selectedFile.type || 'Document', size: (selectedFile.size / (1024 * 1024)).toFixed(2) + ' MB', date: 'Today' }] : [],
+      timeline: [
+        { label: 'Symptom Report Submitted', date: 'Today', time: 'Just now', active: true, desc: 'Citizen registered symptoms online' },
+        { label: 'Awaiting Triage Allocation', date: 'Pending', time: '', active: false, desc: 'System is assigning an available community worker' }
+      ]
     };
 
     setSubmissions([newRecord, ...submissions]);
@@ -937,7 +1019,11 @@ export default function CitizenDashboard({ onBackToRoles, onLogout }: CitizenDas
                       key={sub.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-blue-200 transition-colors"
+                      onClick={() => {
+                        setSelectedReportId(sub.id);
+                        setActiveTab('reports');
+                      }}
+                      className="bg-white border border-slate-100 rounded-2xl p-5 shadow-xs relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-blue-200 hover:shadow-sm transition-all cursor-pointer group"
                     >
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
@@ -952,7 +1038,7 @@ export default function CitizenDashboard({ onBackToRoles, onLogout }: CitizenDas
                           <span className="text-[10px] font-mono text-slate-400">•</span>
                           <span className="text-[10px] font-mono text-slate-400">Body Area: {sub.bodyArea}</span>
                         </div>
-                        <h4 className="font-display font-bold text-slate-800 text-sm line-clamp-1">
+                        <h4 className="font-display font-bold text-slate-800 text-sm line-clamp-1 group-hover:text-blue-600 transition-colors">
                           {sub.symptoms}
                         </h4>
                         {sub.additionalNotes && sub.additionalNotes !== 'None' && (
@@ -973,80 +1059,413 @@ export default function CitizenDashboard({ onBackToRoles, onLogout }: CitizenDas
           </motion.div>
         )}
 
-        {/* Active Tab: Reports view */}
+        {/* Active Tab: Reports view - My Health Reports */}
         {activeTab === 'reports' && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
+            className="space-y-6 max-w-xl mx-auto"
           >
-            {uploadedDocuments.length === 0 ? (
-              <div className="bg-white border border-slate-100 rounded-[2rem] p-10 flex flex-col items-center justify-center text-center min-h-[300px]">
-                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 border border-slate-100 mb-3">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <h3 className="font-display font-bold text-slate-700 text-sm">
-                  No reports available yet
-                </h3>
-                <p className="text-xs text-slate-400 max-w-xs mt-1 leading-normal">
-                  There are no medical laboratory files, AI triage summaries, or vaccination credentials currently logged to your patient identifier.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between px-1">
-                  <div>
-                    <h3 className="font-display font-bold text-slate-900 text-base">My Health Locker</h3>
-                    <p className="text-[11px] text-slate-500 font-medium">Your uploaded prescriptions and reports</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setIsUploadingDocs(true);
-                      setSelectedFile(null);
-                      setUploadError(null);
-                      setShowUploadSuccess(false);
-                    }}
-                    className="text-xs text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 cursor-pointer bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100/40"
+            {selectedReportId ? (
+              // REPORT DETAIL VIEW
+              (() => {
+                const report = submissions.find(r => r.id === selectedReportId);
+                if (!report) {
+                  return (
+                    <div className="text-center py-10">
+                      <p className="text-xs text-slate-500">Report not found.</p>
+                      <button onClick={() => setSelectedReportId(null)} className="mt-4 text-xs font-bold text-blue-600">Back to List</button>
+                    </div>
+                  );
+                }
+                return (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="space-y-6"
                   >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload Document</span>
-                  </button>
-                </div>
-                
-                <div className="grid grid-cols-1 gap-3">
-                  {uploadedDocuments.map((doc) => (
-                    <motion.div
-                      key={doc.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between gap-4 hover:border-emerald-200 hover:shadow-sm transition-all"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-emerald-500 shrink-0">
-                          {doc.objectUrl ? (
-                            <Image className="w-5 h-5 text-emerald-600" />
-                          ) : (
-                            <File className="w-5 h-5 text-blue-500" />
-                          )}
+                    {/* Header with back to list button */}
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                      <button
+                        onClick={() => setSelectedReportId(null)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all border border-slate-100/80 shadow-xs cursor-pointer"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Back to Reports</span>
+                      </button>
+                      <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold">
+                        Report ID: {report.id}
+                      </span>
+                    </div>
+
+                    {/* Report ID and Date Header */}
+                    <div className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-xs space-y-4">
+                      <div className="flex items-start justify-between flex-wrap gap-2">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Submission Date</span>
+                          <div className="flex items-center gap-1.5 text-slate-800">
+                            <Calendar className="w-4 h-4 text-blue-500" />
+                            <span className="text-sm font-bold">{report.date} at {report.time}</span>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <h4 className="text-xs font-bold text-slate-800 truncate max-w-[180px] sm:max-w-xs">{doc.name}</h4>
-                          <span className="text-[9px] font-mono text-slate-400 block mt-0.5">{doc.size} • {doc.date} at {doc.time}</span>
+
+                        {/* Status badge */}
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Status</span>
+                          <span className={`text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-full border ${
+                            report.status === 'Completed' ? 'text-emerald-700 bg-emerald-50 border-emerald-100' :
+                            report.status === 'Reviewed' ? 'text-blue-700 bg-blue-50 border-blue-100' :
+                            'text-amber-700 bg-amber-50 border-amber-100'
+                          }`}>
+                            {report.status}
+                          </span>
                         </div>
                       </div>
+
+                      {/* Patient Summary */}
+                      <div className="pt-4 border-t border-slate-50 space-y-1">
+                        <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Patient Summary</span>
+                        <p className="text-xs font-semibold text-slate-700">{report.patientSummary || 'Male, 29 Years • Sector 3 Rural Outpost'}</p>
+                      </div>
+                    </div>
+
+                    {/* Symptoms details */}
+                    <div className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-xs space-y-4">
+                      <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                          <Activity className="w-4 h-4" />
+                        </div>
+                        <h3 className="font-display font-extrabold text-slate-900 text-sm">Symptoms Description</h3>
+                      </div>
+                      <div className="space-y-3">
+                        <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                          {report.symptoms}
+                        </p>
+                        
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+                          <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                            <span className="text-[9px] font-mono text-slate-400 block uppercase">Duration</span>
+                            <span className="text-xs font-bold text-slate-700 mt-0.5 block">{report.duration}</span>
+                          </div>
+                          <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                            <span className="text-[9px] font-mono text-slate-400 block uppercase">Body Area</span>
+                            <span className="text-xs font-bold text-slate-700 mt-0.5 block">{report.bodyArea}</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                          <span className="text-[9px] font-mono text-slate-400 block uppercase">Severity Level (Risk)</span>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span className={`w-2 h-2 rounded-full ${
+                              report.severity === 'High' ? 'bg-rose-500 animate-pulse' :
+                              report.severity === 'Medium' ? 'bg-amber-500' :
+                              'bg-emerald-500'
+                            }`} />
+                            <span className={`text-xs font-bold uppercase tracking-wider ${
+                              report.severity === 'High' ? 'text-rose-600' :
+                              report.severity === 'Medium' ? 'text-amber-600' :
+                              'text-emerald-600'
+                            }`}>
+                              {report.severity} Severity
+                            </span>
+                          </div>
+                        </div>
+
+                        {report.additionalNotes && report.additionalNotes !== 'None' && (
+                          <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                            <span className="text-[9px] font-mono text-slate-400 block uppercase">Additional Notes</span>
+                            <p className="text-xs text-slate-600 mt-0.5 italic">"{report.additionalNotes}"</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Uploaded Documents section */}
+                    <div className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-xs space-y-4">
+                      <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                          <Upload className="w-4 h-4" />
+                        </div>
+                        <h3 className="font-display font-extrabold text-slate-900 text-sm">Uploaded Documents</h3>
+                      </div>
                       
-                      {doc.objectUrl ? (
-                        <div className="w-10 h-10 rounded-lg border border-slate-100 overflow-hidden bg-slate-50 shrink-0 flex items-center justify-center">
-                          <img src={doc.objectUrl} alt="Thumbnail" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                      {(!report.documents || report.documents.length === 0) ? (
+                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 text-center">
+                          <p className="text-[11px] text-slate-400">No documents attached to this report.</p>
                         </div>
                       ) : (
-                        <div className="w-10 h-10 rounded-lg border border-slate-100 bg-red-50/50 flex items-center justify-center text-red-500 shrink-0">
-                          <span className="text-[9px] font-bold uppercase">PDF</span>
+                        <div className="space-y-2">
+                          {report.documents.map((doc: any, idx: number) => (
+                            <div key={idx} className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-8 h-8 bg-white border border-slate-200/60 rounded-lg flex items-center justify-center text-slate-400 shrink-0">
+                                  {doc.name.endsWith('.pdf') ? (
+                                    <File className="w-4 h-4 text-blue-500" />
+                                  ) : (
+                                    <Image className="w-4 h-4 text-emerald-500" />
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="text-[11px] font-bold text-slate-800 truncate max-w-[180px] sm:max-w-xs">{doc.name}</h4>
+                                  <p className="text-[9px] text-slate-400">{doc.size || 'Size Unknown'}</p>
+                                </div>
+                              </div>
+                              <span className="text-[9px] font-mono text-slate-400 font-semibold uppercase">{doc.date}</span>
+                            </div>
+                          ))}
                         </div>
                       )}
-                    </motion.div>
-                  ))}
+                    </div>
+
+                    {/* Doctor Notes */}
+                    <div className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-xs space-y-4">
+                      <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
+                        <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                          <User className="w-4 h-4" />
+                        </div>
+                        <h3 className="font-display font-extrabold text-slate-900 text-sm">Doctor & Clinical Notes</h3>
+                      </div>
+                      <div className="bg-purple-50/20 border border-purple-100/40 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed font-medium">
+                        {report.doctorNotes || 'No physician evaluation records have been submitted for this intake. A District Health Officer will provide notes following triage validation.'}
+                      </div>
+                    </div>
+
+                    {/* Report timeline */}
+                    <div className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-xs space-y-4">
+                      <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
+                        <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
+                          <Clock className="w-4 h-4" />
+                        </div>
+                        <h3 className="font-display font-extrabold text-slate-900 text-sm">Consultation Timeline</h3>
+                      </div>
+                      
+                      <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
+                        {report.timeline ? report.timeline.map((step: any, idx: number) => (
+                          <div key={idx} className="relative">
+                            {/* Dot indicator */}
+                            <span className={`absolute -left-[21px] top-1 w-[11px] h-[11px] rounded-full border-2 ${
+                              step.active 
+                                ? 'bg-emerald-500 border-emerald-100' 
+                                : 'bg-slate-200 border-white shadow-xs'
+                            }`} />
+                            <div className="space-y-0.5">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <span className={`text-xs font-bold ${step.active ? 'text-slate-800' : 'text-slate-400 font-normal'}`}>
+                                  {step.label}
+                                </span>
+                                <span className="text-[10px] font-mono text-slate-400">{step.date} {step.time}</span>
+                              </div>
+                              {step.desc && (
+                                <p className="text-[11px] text-slate-400 leading-normal">{step.desc}</p>
+                              )}
+                            </div>
+                          </div>
+                        )) : (
+                          <div className="relative">
+                            <span className="absolute -left-[21px] top-1 w-[11px] h-[11px] rounded-full border-2 bg-emerald-500 border-emerald-100" />
+                            <div className="space-y-0.5">
+                              <span className="text-xs font-bold text-slate-800">Symptom Report Submitted</span>
+                              <p className="text-[10px] text-slate-400">{report.date} {report.time}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setSelectedReportId(null)}
+                      className="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3.5 px-6 rounded-xl text-xs shadow-sm transition-all text-center block cursor-pointer"
+                    >
+                      Back to Reports List
+                    </button>
+                  </motion.div>
+                );
+              })()
+            ) : (
+              // REPORTS LIST VIEW
+              <div className="space-y-6">
+                {/* Header Section */}
+                <div className="flex items-center justify-between px-1">
+                  <div>
+                    <h1 className="text-2xl font-display font-extrabold text-slate-950 tracking-tight">
+                      My Health Reports
+                    </h1>
+                    <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                      Secure registry of symptom reviews and medical triages
+                    </p>
+                  </div>
+                  
+                  {/* Quick report button */}
+                  <button
+                    onClick={() => {
+                      setIsReportingSymptoms(true);
+                      setShowSuccessScreen(false);
+                      setErrors({});
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer bg-blue-50 px-3 py-2 rounded-xl border border-blue-100/40 transition-colors"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>New Report</span>
+                  </button>
                 </div>
+
+                {/* Search Bar & Filters Section */}
+                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xs space-y-4">
+                  {/* Search bar input */}
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Search reports by ID or symptoms..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50 focus:bg-white border border-slate-100 focus:border-blue-500 focus:ring-blue-100 focus:ring-4 rounded-xl text-xs font-semibold outline-none transition-all placeholder:text-slate-400"
+                    />
+                  </div>
+
+                  {/* Filter chips header */}
+                  <div className="space-y-2">
+                    <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider block font-bold">
+                      Filter Reports
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { id: 'Newest', label: 'Newest First' },
+                        { id: 'Oldest', label: 'Oldest First' },
+                        { id: 'High', label: 'High Risk' },
+                        { id: 'Medium', label: 'Medium Risk' },
+                        { id: 'Low', label: 'Low Risk' }
+                      ].map((chip) => (
+                        <button
+                          key={chip.id}
+                          onClick={() => setFilterOption(chip.id as any)}
+                          className={`px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wide border transition-all cursor-pointer ${
+                            filterOption === chip.id
+                              ? 'bg-blue-600 border-blue-600 text-white shadow-xs'
+                              : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'
+                          }`}
+                        >
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Report Cards Grid */}
+                {(() => {
+                  // Apply search and severity filter
+                  let list = [...submissions].filter(sub => {
+                    const matchesSearch = 
+                      sub.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      sub.symptoms.toLowerCase().includes(searchTerm.toLowerCase());
+                    
+                    if (filterOption === 'High') return matchesSearch && sub.severity === 'High';
+                    if (filterOption === 'Medium') return matchesSearch && sub.severity === 'Medium';
+                    if (filterOption === 'Low') return matchesSearch && sub.severity === 'Low';
+                    
+                    return matchesSearch;
+                  });
+
+                  // Apply sort order
+                  if (filterOption === 'Oldest') {
+                    // Oldest first means reverse of newest first
+                    list.reverse();
+                  }
+
+                  if (list.length === 0) {
+                    return (
+                      <div className="bg-white border border-slate-100 rounded-[2.5rem] p-10 flex flex-col items-center justify-center text-center min-h-[300px]">
+                        <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 border border-slate-100 mb-3">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-display font-bold text-slate-700 text-sm">
+                          No reports available yet.
+                        </h3>
+                        <p className="text-xs text-slate-400 max-w-xs mt-1 leading-normal mb-6">
+                          {searchTerm 
+                            ? "No reports match your active search filter. Try clearing your keywords." 
+                            : "There are no medical evaluations, health risk assessments, or clinical consultation reports filed to your identifier."}
+                        </p>
+                        <button
+                          onClick={() => {
+                            setIsReportingSymptoms(true);
+                            setShowSuccessScreen(false);
+                            setErrors({});
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-3 rounded-xl text-xs hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
+                        >
+                          <PlusCircle className="w-4 h-4" />
+                          <span>Report Symptoms</span>
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="grid grid-cols-1 gap-4">
+                      {list.map((report) => (
+                        <motion.div
+                          key={report.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          onClick={() => setSelectedReportId(report.id)}
+                          className="bg-white border border-slate-100 rounded-3xl p-5 hover:border-blue-200 hover:shadow-sm transition-all cursor-pointer group space-y-3"
+                        >
+                          {/* Card top bar with ID, Date, and Risk Badge */}
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-mono font-bold text-blue-600 bg-blue-50 border border-blue-100/60 px-2 py-0.5 rounded-md">
+                                {report.id}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-400">
+                                {report.date}
+                              </span>
+                            </div>
+
+                            {/* Risk Badge */}
+                            <span className={`text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                              report.severity === 'High' ? 'text-rose-600 bg-rose-50 border-rose-100/40' :
+                              report.severity === 'Medium' ? 'text-amber-600 bg-amber-50 border-amber-100/40' :
+                              'text-emerald-600 bg-emerald-50 border-emerald-100/40'
+                            }`}>
+                              {report.severity} Severity (Risk)
+                            </span>
+                          </div>
+
+                          {/* Symptoms Summary */}
+                          <div className="space-y-1">
+                            <h4 className="font-display font-bold text-slate-800 text-sm line-clamp-2 group-hover:text-blue-600 transition-colors">
+                              {report.symptoms}
+                            </h4>
+                            <p className="text-[11px] text-slate-400 line-clamp-1">
+                              Duration: {report.duration} • Area: {report.bodyArea || 'General'}
+                            </p>
+                          </div>
+
+                          {/* Card Bottom: Status & Action indicator */}
+                          <div className="pt-3 border-t border-slate-50 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                report.status === 'Completed' ? 'bg-emerald-500' :
+                                report.status === 'Reviewed' ? 'bg-blue-500' :
+                                'bg-amber-500'
+                              }`} />
+                              <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">
+                                {report.status || 'Pending'}
+                              </span>
+                            </div>
+                            
+                            <span className="text-[10px] text-blue-600 font-bold flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <span>View Details</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </motion.div>
