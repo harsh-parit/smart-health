@@ -5,6 +5,9 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import ConsultationWorkspace from './ConsultationWorkspace';
+import PatientDetailsModal from './PatientDetailsModal';
+import ConsultationSummary from './ConsultationSummary';
 import { 
   Activity, 
   Users, 
@@ -42,8 +45,12 @@ export interface PrescriptionItem {
 
 export interface ConsultationRecord {
   clinicalNotes: string;
+  diagnosis?: string;
+  observations?: string;
   prescription: PrescriptionItem[];
   referredTo: string;
+  advice?: string;
+  followUpDate?: string;
   completedAt: string;
 }
 
@@ -67,6 +74,7 @@ export interface Patient {
   };
   symptoms: string[];
   notes: string;
+  medicalHistory?: string[];
   consultation?: ConsultationRecord;
 }
 
@@ -91,6 +99,12 @@ const initialPatientsList: Patient[] = [
     },
     symptoms: ['Severe bilateral pedal edema', 'Frequent frontal headache', 'Mild blurred vision'],
     notes: '28 weeks gestational timeline. ASHA reports elevated home BP levels. Pre-eclampsia screening required.',
+    medicalHistory: [
+      'G1P0 (Primigravida), 28 Weeks Gestation',
+      'No history of pre-existing essential hypertension',
+      'Family history of pregnancy-induced hypertension (mother)',
+      'No known drug allergies (NKDA)'
+    ]
   },
   {
     id: '2',
@@ -112,6 +126,25 @@ const initialPatientsList: Patient[] = [
     },
     symptoms: ['Chronic non-healing plantar ulcer', 'Polydipsia', 'Generalized fatigue'],
     notes: 'Patient requests review of plantar ulcer on left heel. Blood glucose control assessment and insulin dosage adjustment.',
+    medicalHistory: [
+      'Type 2 Diabetes Mellitus diagnosed in 2018',
+      'Diabetic peripheral neuropathy with distal sensory loss',
+      'Mild osteoarthritis of bilateral knees',
+      'History of poor glycaemic control (HbA1c ~8.9%)'
+    ],
+    consultation: {
+      clinicalNotes: 'Uncontrolled diabetes with active plantar ulcer',
+      diagnosis: 'Type 2 Diabetes Mellitus with neuropathic plantar ulcer',
+      observations: 'Active plantar ulcer on left metatarsal head, 2cm x 1.5cm, granular bed, no active purulent discharge or bone exposure. BP slightly elevated.',
+      prescription: [
+        { name: 'Metformin 1000mg', dosage: '1 tablet', frequency: 'Twice daily (BD)', timing: 'With meals (CC)' },
+        { name: 'Pregabalin 75mg', dosage: '1 capsule', frequency: 'Once daily (OD)', timing: 'At bedtime (HS)' }
+      ],
+      referredTo: 'Advised daily wound dressing and diabetes specialist consult',
+      advice: 'Daily wound dressing with sterile saline. Strict offloading of left foot. Restrict simple carbohydrates.',
+      followUpDate: '2026-07-13',
+      completedAt: 'Draft'
+    }
   },
   {
     id: '3',
@@ -133,13 +166,23 @@ const initialPatientsList: Patient[] = [
     },
     symptoms: ['Sore throat', 'Rhinorrhea', 'Dry cough'],
     notes: 'Presented with seasonal flu symptoms for 3 days. No underlying comorbidities.',
+    medicalHistory: [
+      'Seasonal allergic rhinitis since childhood',
+      'No history of major surgical interventions',
+      'No chronic metabolic or cardiovascular ailments',
+      'Fully vaccinated for Covid-19 and influenza'
+    ],
     consultation: {
       clinicalNotes: 'Upper respiratory congestion. Chest clear to auscultation, no adventitious sounds. Throat shows mild erythema but no active exudates.',
+      diagnosis: 'Acute Viral Pharyngitis / Seasonal Rhinitis',
+      observations: 'Mild pharyngeal erythema. Bilateral air entry equal with no wheezing or crepitations. Heart sounds normal.',
       prescription: [
         { name: 'Cetirizine 10mg', dosage: '1 tablet', frequency: 'Once daily (OD)', timing: 'At bedtime (HS)' },
         { name: 'Paracetamol 650mg', dosage: '1 tablet', frequency: 'As needed (PRN)', timing: 'After meals (PC)' }
       ],
       referredTo: 'Discharged with symptomatic advice',
+      advice: 'Warm water gargles 3-4 times a day. Steam inhalation at bedtime. Keep hydrated. Return if fever persists > 3 days.',
+      followUpDate: '2026-07-10',
       completedAt: '10:05 AM'
     }
   },
@@ -163,6 +206,12 @@ const initialPatientsList: Patient[] = [
     },
     symptoms: ['Surgical wound erythema', 'High-grade fever peaks', 'Rigor and chills'],
     notes: 'Outpatient clinical follow-up for infected suture. Wound dressing evaluation and antibiotic initiation.',
+    medicalHistory: [
+      'Laparoscopic Appendectomy completed 12 days ago at district referral center',
+      'Essential Hypertension controlled on Telmisartan 40mg daily',
+      'No history of drug allergies',
+      'Moderate tobacco chewing history (stopped recently)'
+    ]
   },
   {
     id: '5',
@@ -184,6 +233,12 @@ const initialPatientsList: Patient[] = [
     },
     symptoms: ['Mild lower back ache', 'Occasional morning dizziness'],
     notes: 'Maternal ANC follow-up check. 26 weeks pregnant. Normal fetal movements reported. Screening for maternal anaemia.',
+    medicalHistory: [
+      'G2P1, 26 Weeks Gestation',
+      'Prior uncomplicated spontaneous vaginal delivery (FT-NVD) in 2022',
+      'History of mild gestational iron deficiency anaemia',
+      'Regular maternal supplement intake'
+    ]
   },
   {
     id: '6',
@@ -205,6 +260,12 @@ const initialPatientsList: Patient[] = [
     },
     symptoms: ['Postpartum fatigue', 'Mild sleep disturbance'],
     notes: 'Routine 6-week postpartum evaluation. Lactating mother. Advised on calcium and iron supplement compliance.',
+    medicalHistory: [
+      'G3P2, Normal Term Delivery 6 weeks ago',
+      'Exclusive breastfeeding mother',
+      'Bilateral tubal ligation completed postpartum',
+      'No previous endocrine or metabolic abnormalities'
+    ]
   }
 ];
 
@@ -222,8 +283,14 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
   const [riskFilter, setRiskFilter] = useState<'All' | 'High Risk' | 'Medium Risk' | 'Low Risk'>('All');
   const [selectedPatientDetails, setSelectedPatientDetails] = useState<Patient | null>(null);
   const [activeConsultation, setActiveConsultation] = useState<Patient | null>(null);
+  const [activeSummaryPatient, setActiveSummaryPatient] = useState<Patient | null>(null);
+  const [activeSummaryRecord, setActiveSummaryRecord] = useState<ConsultationRecord | null>(null);
 
   // Consultation Builder Form States
+  const [diagnosis, setDiagnosis] = useState('');
+  const [observations, setObservations] = useState('');
+  const [advice, setAdvice] = useState('');
+  const [followUpDate, setFollowUpDate] = useState('');
   const [clinicalNotes, setClinicalNotes] = useState('');
   const [referredTo, setReferredTo] = useState('Discharged with symptomatic advice');
   const [prescriptionList, setPrescriptionList] = useState<PrescriptionItem[]>([]);
@@ -231,6 +298,7 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
   const [newMedDosage, setNewMedDosage] = useState('1 tablet');
   const [newMedFrequency, setNewMedFrequency] = useState('Twice daily (BD)');
   const [newMedTiming, setNewMedTiming] = useState('After meals (PC)');
+  const [successToast, setSuccessToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
 
   const handleStartConsultation = (patient: Patient) => {
     setActiveConsultation(patient);
@@ -244,10 +312,18 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
     
     // Prepopulate form if existing consultation data
     if (patient.consultation) {
+      setDiagnosis(patient.consultation.diagnosis || patient.consultation.clinicalNotes || '');
+      setObservations(patient.consultation.observations || patient.consultation.clinicalNotes || '');
+      setAdvice(patient.consultation.advice || patient.consultation.referredTo || '');
+      setFollowUpDate(patient.consultation.followUpDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
       setClinicalNotes(patient.consultation.clinicalNotes);
       setReferredTo(patient.consultation.referredTo);
       setPrescriptionList(patient.consultation.prescription);
     } else {
+      setDiagnosis('');
+      setObservations('');
+      setAdvice('');
+      setFollowUpDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
       setClinicalNotes('');
       setReferredTo('Discharged with symptomatic advice');
       setPrescriptionList([]);
@@ -274,16 +350,58 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
     setPrescriptionList(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSaveConsultation = () => {
+  const handleSaveDraft = () => {
     if (!activeConsultation) return;
     
+    const record: ConsultationRecord = {
+      diagnosis: diagnosis.trim(),
+      observations: observations.trim(),
+      prescription: prescriptionList,
+      advice: advice.trim(),
+      followUpDate: followUpDate,
+      clinicalNotes: diagnosis.trim() || observations.trim() || 'Draft consultation',
+      referredTo: advice.trim() || 'Discharged with symptomatic advice',
+      completedAt: 'Draft'
+    };
+
+    setPatients(prev => prev.map(p => {
+      if (p.id === activeConsultation.id) {
+        return {
+          ...p,
+          status: 'In Consultation',
+          consultation: record
+        };
+      }
+      return p;
+    }));
+
+    setSuccessToast({
+      show: true,
+      message: `Draft consultation saved successfully for ${activeConsultation.name}.`
+    });
+
+    setActiveConsultation(null);
+  };
+
+  const handleCompleteConsultation = () => {
+    if (!activeConsultation) return;
+    
+    if (!diagnosis.trim()) {
+      alert("Please enter a Diagnosis before completing the consultation.");
+      return;
+    }
+
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     const record: ConsultationRecord = {
-      clinicalNotes: clinicalNotes.trim() || 'No specific clinical findings recorded.',
+      diagnosis: diagnosis.trim(),
+      observations: observations.trim() || 'Routine outpatient observations.',
       prescription: prescriptionList,
-      referredTo: referredTo,
+      advice: advice.trim() || 'Discharged with symptomatic advice.',
+      followUpDate: followUpDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      clinicalNotes: diagnosis.trim(),
+      referredTo: advice.trim() || 'Discharged with symptomatic advice.',
       completedAt: timeStr
     };
 
@@ -303,7 +421,16 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
       setSelectedPatientDetails(prev => prev ? { ...prev, status: 'Completed', consultation: record } : null);
     }
 
+    setSuccessToast({
+      show: true,
+      message: `Consultation completed and electronic medical records locked for ${activeConsultation.name}.`
+    });
+
     setActiveConsultation(null);
+  };
+
+  const handleSaveConsultation = () => {
+    handleCompleteConsultation();
   };
 
   const navigationItems = [
@@ -333,7 +460,16 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
         </div>
 
         <button
-          onClick={onBackToRoles}
+          onClick={() => {
+            if (activeConsultation) {
+              if (confirm("You have an active consultation in progress. Leaving now will discard unsaved clinical findings. Proceed anyway?")) {
+                setActiveConsultation(null);
+                onBackToRoles();
+              }
+            } else {
+              onBackToRoles();
+            }
+          }}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 rounded-xl transition-all border border-slate-100"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -377,8 +513,20 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
                 <button
                   key={item.id}
                   onClick={() => {
-                    setActiveTab(item.id);
-                    setSidebarOpen(false);
+                    if (activeConsultation) {
+                      if (confirm("You have an active consultation in progress. Leaving now will discard unsaved clinical findings. Proceed anyway?")) {
+                        setActiveConsultation(null);
+                        setActiveSummaryPatient(null);
+                        setActiveSummaryRecord(null);
+                        setActiveTab(item.id);
+                        setSidebarOpen(false);
+                      }
+                    } else {
+                      setActiveSummaryPatient(null);
+                      setActiveSummaryRecord(null);
+                      setActiveTab(item.id);
+                      setSidebarOpen(false);
+                    }
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     isActive 
@@ -397,14 +545,40 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
         {/* Sidebar Footer buttons */}
         <div className="space-y-2 border-t border-slate-50 pt-6">
           <button
-            onClick={onBackToRoles}
+            onClick={() => {
+              if (activeConsultation) {
+                if (confirm("You have an active consultation in progress. Leaving now will discard unsaved clinical findings. Proceed anyway?")) {
+                  setActiveConsultation(null);
+                  setActiveSummaryPatient(null);
+                  setActiveSummaryRecord(null);
+                  onBackToRoles();
+                }
+              } else {
+                setActiveSummaryPatient(null);
+                setActiveSummaryRecord(null);
+                onBackToRoles();
+              }
+            }}
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all border border-transparent cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 text-slate-400" />
             <span>Switch Role</span>
           </button>
           <button
-            onClick={onLogout}
+            onClick={() => {
+              if (activeConsultation) {
+                if (confirm("You have an active consultation in progress. Leaving now will discard unsaved clinical findings. Proceed anyway?")) {
+                  setActiveConsultation(null);
+                  setActiveSummaryPatient(null);
+                  setActiveSummaryRecord(null);
+                  onLogout();
+                }
+              } else {
+                setActiveSummaryPatient(null);
+                setActiveSummaryRecord(null);
+                onLogout();
+              }
+            }}
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-500 hover:text-rose-700 hover:bg-rose-50/50 transition-all border border-transparent cursor-pointer"
           >
             <LogOut className="w-4 h-4 text-rose-400" />
@@ -424,8 +598,74 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
       {/* Content Area */}
       <main className="flex-1 overflow-y-auto px-6 py-8 md:px-10 space-y-8 relative z-10 max-w-5xl mx-auto w-full">
         
-        {/* Upper Header (Hidden on Mobile) */}
-        <div className="hidden md:flex items-center justify-between pb-6 border-b border-slate-100">
+        {activeSummaryPatient && activeSummaryRecord ? (
+          <ConsultationSummary
+            patient={activeSummaryPatient}
+            record={activeSummaryRecord}
+            onEdit={() => {
+              // Go back to consultation workspace
+              setActiveConsultation(activeSummaryPatient);
+              // Prepopulate the form fields if needed (these are reactive in ConsultationWorkspace to patient.consultation or custom passed state)
+              setActiveSummaryPatient(null);
+              setActiveSummaryRecord(null);
+            }}
+            onApprove={() => {
+              // Lock / Approve record
+              setPatients(prev => prev.map(p => {
+                if (p.id === activeSummaryPatient.id) {
+                  return { ...p, status: 'Completed', consultation: activeSummaryRecord };
+                }
+                return p;
+              }));
+              setSuccessToast({
+                show: true,
+                message: `SOAP clinical record approved and cryptographically signed for ${activeSummaryPatient.name}.`
+              });
+            }}
+            onReturnToQueue={() => {
+              setActiveSummaryPatient(null);
+              setActiveSummaryRecord(null);
+              setActiveTab('queue');
+            }}
+          />
+        ) : activeConsultation ? (
+          <ConsultationWorkspace
+            patient={activeConsultation}
+            onCancel={() => setActiveConsultation(null)}
+            onSaveDraft={(record) => {
+              setPatients(prev => prev.map(p => {
+                if (p.id === activeConsultation.id) {
+                  return { ...p, status: 'In Consultation', consultation: record };
+                }
+                return p;
+              }));
+              setSuccessToast({
+                show: true,
+                message: `Draft consultation saved successfully for ${activeConsultation.name}.`
+              });
+              setActiveConsultation(null);
+            }}
+            onComplete={(record) => {
+              setPatients(prev => prev.map(p => {
+                if (p.id === activeConsultation.id) {
+                  return { ...p, status: 'Completed', consultation: record };
+                }
+                return p;
+              }));
+              if (selectedPatientDetails && selectedPatientDetails.id === activeConsultation.id) {
+                setSelectedPatientDetails(prev => prev ? { ...prev, status: 'Completed', consultation: record } : null);
+              }
+              
+              // Transition to Consultation Summary page
+              setActiveSummaryPatient(activeConsultation);
+              setActiveSummaryRecord(record);
+              setActiveConsultation(null);
+            }}
+          />
+        ) : (
+          <>
+            {/* Upper Header (Hidden on Mobile) */}
+            <div className="hidden md:flex items-center justify-between pb-6 border-b border-slate-100">
           <div>
             <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest block font-bold">
               Clinical Support Workspace
@@ -894,7 +1134,14 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
 
                             {patient.status === 'Completed' ? (
                               <button
-                                onClick={() => setSelectedPatientDetails(patient)}
+                                onClick={() => {
+                                  if (patient.consultation) {
+                                    setActiveSummaryPatient(patient);
+                                    setActiveSummaryRecord(patient.consultation);
+                                  } else {
+                                    setSelectedPatientDetails(patient);
+                                  }
+                                }}
                                 className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer shadow-xs"
                               >
                                 <CheckCircle className="w-3.5 h-3.5" />
@@ -1005,7 +1252,14 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
                       )}
 
                       <button
-                        onClick={() => setSelectedPatientDetails(patient)}
+                        onClick={() => {
+                          if (patient.status === 'Completed' && patient.consultation) {
+                            setActiveSummaryPatient(patient);
+                            setActiveSummaryRecord(patient.consultation);
+                          } else {
+                            setSelectedPatientDetails(patient);
+                          }
+                        }}
                         className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer shrink-0"
                       >
                         {patient.status === 'Completed' ? 'View Record' : 'View Vitals'}
@@ -1018,7 +1272,46 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
           </motion.div>
         )}
 
+          </>
+        )}
+
       </main>
+
+      {/* Success Notification Toast */}
+      <AnimatePresence>
+        {successToast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-6 right-6 z-50 max-w-sm bg-slate-900 text-white rounded-2xl p-4 shadow-xl border border-slate-800 flex items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <Check className="w-4 h-4" />
+              </div>
+              <p className="text-xs font-semibold leading-normal">{successToast.message}</p>
+            </div>
+            <button
+              onClick={() => setSuccessToast({ show: false, message: '' })}
+              className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Patient Details Modal */}
+      <AnimatePresence>
+        {selectedPatientDetails && (
+          <PatientDetailsModal
+            patient={selectedPatientDetails}
+            onClose={() => setSelectedPatientDetails(null)}
+            onStartConsultation={(p) => handleStartConsultation(p)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
