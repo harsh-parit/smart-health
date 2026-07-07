@@ -71,7 +71,7 @@ export default function Footer() {
             <li><a href="#technology" className="hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm px-1">Technology Blueprint</a></li>
             <li>
               <a 
-                href="https://github.com" 
+                href="https://github.com/harsh-parit/smart-health" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="hover:text-white transition-colors inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm px-1"
@@ -92,11 +92,11 @@ export default function Footer() {
           <ul className="space-y-3 text-xs font-medium text-slate-400">
             <li className="flex items-center gap-2">
               <Mail className="w-3.5 h-3.5 text-slate-500" />
-              <span>health-ai-support@google.com</span>
+              <span>harshparit@gmail.com</span>
             </li>
             <li className="flex items-center gap-2">
               <Phone className="w-3.5 h-3.5 text-slate-500" />
-              <span>+91 11-4284-9680</span>
+              <span>+91-xxxxx-xxxxx</span>
             </li>
             <li className="flex items-start gap-2">
               <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />

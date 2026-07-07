@@ -168,7 +168,7 @@ export default function Navbar({ onGetStarted, onOpenDemo }: NavbarProps) {
               {/* Bottom drawer footer content */}
               <div className="space-y-3.5">
                 <a
-                  href="https://github.com"
+                  href="https://github.com/harsh-parit/smart-health"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full border border-slate-200 bg-white text-slate-700 font-bold rounded-xl py-3 text-xs flex items-center justify-center gap-2 cursor-pointer"
