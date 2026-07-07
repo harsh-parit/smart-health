@@ -115,7 +115,7 @@ export default function Footer() {
             <div>
               <h5 className="text-xs font-bold text-white uppercase tracking-wider font-mono">Professional Safety Triage Warning</h5>
               <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed font-medium">
-                Smart Health AI is a prototype build submitted for evaluation. This technology does not render final medical diagnostic decisions, prescribe medications, or replace licensed professional clinical consultations. It is strictly an auxiliary triage, decision validation, and epidemiological surveillance assistance ecosystem.
+                JanArogya AI is a prototype build submitted for evaluation. This technology does not render final medical diagnostic decisions, prescribe medications, or replace licensed professional clinical consultations. It is strictly an auxiliary triage, decision validation, and epidemiological surveillance assistance ecosystem.
               </p>
             </div>
           </div>
@@ -125,7 +125,7 @@ export default function Footer() {
       {/* Sub-footer Brand Attribution Signature */}
       <div className="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-slate-900/80 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500 font-medium">
         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4">
-          <span>&copy; {currentYear} Smart Health AI Project. All rights reserved.</span>
+          <span>&copy; {currentYear} JanArogya AI Project. All rights reserved.</span>
           <span className="hidden sm:inline text-slate-800">|</span>
           <span className="flex items-center gap-1.5">
             Crafted with <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" /> for global clinical equity.

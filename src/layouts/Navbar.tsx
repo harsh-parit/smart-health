@@ -58,7 +58,7 @@ export default function Navbar({ onGetStarted, onOpenDemo }: NavbarProps) {
             </div>
             <div>
               <span className="font-display font-bold text-slate-900 tracking-tight text-lg group-hover:text-blue-600 transition-colors block">
-                Smart Health AI
+                JanArogya AI
               </span>
               <span className="block text-[8px] font-mono text-slate-400 uppercase tracking-widest leading-none">
                 Google Cloud Intelligence
