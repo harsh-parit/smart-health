@@ -37,7 +37,11 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+const databaseId =
+  import.meta.env.VITE_FIRESTORE_DATABASE_ID ||
+  "ai-studio-smarthealthai-15ad667c-3a58-4cd5-992e-3c6bf6788708";
+
+export const db = getFirestore(app, databaseId);
 
 /**
  * Returns a collection name dynamically prefixed if the application is running in Demo Mode.
