@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { db } from '../lib/firebase';
+import { db, getCollectionName } from '../lib/firebase';
 import { 
   collection, 
   query, 
@@ -50,7 +50,7 @@ export interface SavedReport {
  * Generates the next sequential unique report ID matching format SHAI-2026-XXXXXX.
  */
 export async function generateNextReportId(): Promise<string> {
-  const collectionRef = collection(db, 'patientReports');
+  const collectionRef = collection(db, getCollectionName('patientReports'));
   
   // Sort descending by reportId to find the highest ID
   const q = query(collectionRef, orderBy('reportId', 'desc'), limit(1));
@@ -87,7 +87,7 @@ export async function generateNextReportId(): Promise<string> {
  * Uses a generated unique Report ID as the document ID to guarantee uniqueness.
  */
 export async function savePatientReport(reportData: Omit<SavedReport, 'createdAt' | 'updatedAt'>): Promise<string> {
-  const reportDocRef = doc(db, 'patientReports', reportData.reportId);
+  const reportDocRef = doc(db, getCollectionName('patientReports'), reportData.reportId);
   
   const finalDocData = {
     ...reportData,

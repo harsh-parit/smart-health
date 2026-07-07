@@ -19,6 +19,7 @@ import DhoDashboard from './components/DhoDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleGuard from './components/RoleGuard';
 import DemoModeModal from './components/DemoModeModal';
+import DemoControlCenter from './components/DemoControlCenter';
 import { 
   AuthorizationService, 
   UserProfile, 
@@ -50,6 +51,11 @@ export default function App() {
   // Demo Mode States
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isDemoOpen, setIsDemoOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('sh_is_demo_mode', isDemoMode ? 'true' : 'false');
+    (window as any).sh_is_demo_mode = isDemoMode;
+  }, [isDemoMode]);
   
   // Custom metadata from AI Studio context
   const defaultUserEmail = 'harshparit@gmail.com';
@@ -388,6 +394,8 @@ export default function App() {
           }
         }}
       />
+
+      {isDemoMode && <DemoControlCenter />}
     </div>
   );
 }

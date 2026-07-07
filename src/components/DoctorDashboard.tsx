@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, getCollectionName } from '../lib/firebase';
 import { SavedReport } from '../services/reportService';
 import ConsultationWorkspace from './ConsultationWorkspace';
 import PatientDetailsModal from './PatientDetailsModal';
@@ -316,7 +316,7 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
     setLoadingReports(true);
     setReportsError(null);
     const q = query(
-      collection(db, 'patientReports'),
+      collection(db, getCollectionName('patientReports')),
       where('status', '==', 'Pending Doctor Review')
     );
 
@@ -479,7 +479,7 @@ export default function DoctorDashboard({ onBackToRoles, onLogout }: DoctorDashb
     const docId = report.id || report.reportId;
     setIsRejecting(true);
     try {
-      const reportRef = doc(db, 'patientReports', docId);
+      const reportRef = doc(db, getCollectionName('patientReports'), docId);
       await updateDoc(reportRef, {
         status: 'Rejected',
         updatedAt: new Date()

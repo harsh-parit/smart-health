@@ -38,3 +38,15 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+/**
+ * Returns a collection name dynamically prefixed if the application is running in Demo Mode.
+ * This guarantees absolute isolation from production data.
+ */
+export function getCollectionName(baseName: string): string {
+  const isDemo = localStorage.getItem('sh_is_demo_mode') === 'true';
+  if (isDemo) {
+    return `demo_${baseName}`;
+  }
+  return baseName;
+}
