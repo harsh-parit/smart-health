@@ -83,7 +83,7 @@ export default function HeroSection({ onGetStarted, onOpenDemo }: HeroSectionPro
               onClick={() => onGetStarted('get-started')}
               className="bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-bold rounded-2xl py-4 px-8 text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/15 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 cursor-pointer group"
             >
-              <span>Get Started</span>
+              <span>Login</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
 
