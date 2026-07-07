@@ -30,8 +30,8 @@ import {
   replayDemoWorkflow, 
   generateRandomHealthEvent, 
   simulateDoctorCompletion,
-  DemoEvent 
-} from '../services/demoService';
+} from '../../services/demoService';
+import { DemoEvent } from '../../types';
 
 export default function DemoControlCenter() {
   const [isOpen, setIsOpen] = useState(false);

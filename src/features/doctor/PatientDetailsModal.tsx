@@ -16,7 +16,7 @@ import {
   Activity,
   ArrowLeft
 } from 'lucide-react';
-import { SavedReport } from '../services/reportService';
+import { SavedReport } from '../../types';
 
 interface PatientDetailsModalProps {
   report: SavedReport | null;

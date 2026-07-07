@@ -6,8 +6,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { db, getCollectionName } from '../lib/firebase';
-import { SavedReport } from '../services/reportService';
+import { db, getCollectionName } from '../../lib/firebase';
+import { SavedReport } from '../../types';
 import ConsultationWorkspace from './ConsultationWorkspace';
 import PatientDetailsModal from './PatientDetailsModal';
 import ConsultationSummary from './ConsultationSummary';

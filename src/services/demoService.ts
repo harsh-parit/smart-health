@@ -1,15 +1,6 @@
 import { collection, doc, setDoc, deleteDoc, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db, getCollectionName } from '../lib/firebase';
-import { SavedReport } from './reportService';
-
-export interface DemoEvent {
-  id: string;
-  type: 'citizen_created' | 'case_created' | 'consultation_completed' | 'visit_completed' | 'alert_triggered' | 'system';
-  title: string;
-  description: string;
-  timestamp: string;
-  severity: 'low' | 'medium' | 'high' | 'info';
-}
+import { SavedReport, DemoEvent } from '../types';
 
 // Retrieve demo events from LocalStorage
 export function getDemoEvents(): DemoEvent[] {

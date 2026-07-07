@@ -4,10 +4,11 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { db, getCollectionName } from '../lib/firebase';
+import { db, getCollectionName } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { subscribeToDistrictIntelligence, DistrictIntelligenceMetrics, classifyDiseaseCategory } from '../services/districtAnalyticsService';
-import { evaluateReportsForAlerts } from '../services/alertGenerationService';
+import { subscribeToDistrictIntelligence, classifyDiseaseCategory } from '../../services/districtAnalyticsService';
+import { evaluateReportsForAlerts } from '../../services/alertGenerationService';
+import { DistrictIntelligenceMetrics } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
 import DhoAiInsightsPanel from './DhoAiInsightsPanel';
 import { 

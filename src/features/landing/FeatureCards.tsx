@@ -12,7 +12,7 @@ import {
   BarChart3,
   Check 
 } from 'lucide-react';
-import { ActiveModalType } from '../types';
+import { ActiveModalType } from '../../types';
 
 interface FeatureCardsProps {
   onSelectFeature: (type: ActiveModalType) => void;

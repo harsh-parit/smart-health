@@ -7,17 +7,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 
-export type UserRole = 'citizen' | 'asha' | 'doctor' | 'districtOfficer';
-
-export interface UserProfile {
-  uid: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  district?: string;
-  createdAt: any;
-  lastLogin: any;
-}
+import { UserRole, UserProfile } from '../types';
 
 export enum OperationType {
   CREATE = 'create',

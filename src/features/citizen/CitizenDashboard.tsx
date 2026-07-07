@@ -34,10 +34,10 @@ import {
   Share2 as Share,
   Save
 } from 'lucide-react';
-import { auth } from '../lib/firebase';
-import { analyzeSymptoms } from '../services/geminiService';
-import type { SymptomAnalysisResponse } from '../services/geminiService';
-import { generateNextReportId, savePatientReport } from '../services/reportService';
+import { auth } from '../../lib/firebase';
+import { analyzeSymptoms } from '../../services/geminiService';
+import type { SymptomAnalysisResponse } from '../../types';
+import { generateNextReportId, savePatientReport } from '../../services/reportService';
 
 interface CitizenDashboardProps {
   onBackToRoles: () => void;

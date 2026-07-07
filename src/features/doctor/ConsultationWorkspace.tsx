@@ -20,8 +20,8 @@ import {
   Users
 } from 'lucide-react';
 import { Patient, ConsultationRecord, PrescriptionItem } from './DoctorDashboard';
-import { SavedReport } from '../services/reportService';
-import { generateSOAPNotes } from '../services/geminiService';
+import { SavedReport } from '../../types';
+import { generateSOAPNotes } from '../../services/geminiService';
 
 interface ConsultationWorkspaceProps {
   patient: Patient;

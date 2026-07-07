@@ -14,7 +14,7 @@ import {
   Terminal, 
   LockKeyhole 
 } from 'lucide-react';
-import { UserRole, UserProfile } from '../services/AuthorizationService';
+import { UserRole, UserProfile } from '../../types';
 
 interface DemoModeModalProps {
   isOpen: boolean;

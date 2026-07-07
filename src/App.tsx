@@ -4,28 +4,24 @@
  */
 
 import { useState, useEffect } from 'react';
-import Navbar from './components/Navbar';
-import HeroSection from './components/HeroSection';
-import FeatureCards from './components/FeatureCards';
-import VisionSection from './components/VisionSection';
-import VisionModal from './components/VisionModal';
-import Footer from './components/Footer';
-import LoginPage from './components/LoginPage';
-import RoleSelectionPage from './components/RoleSelectionPage';
-import CitizenDashboard from './components/CitizenDashboard';
-import AshaDashboard from './components/AshaDashboard';
-import DoctorDashboard from './components/DoctorDashboard';
-import DhoDashboard from './components/DhoDashboard';
+import Navbar from './layouts/Navbar';
+import HeroSection from './features/landing/HeroSection';
+import FeatureCards from './features/landing/FeatureCards';
+import VisionSection from './features/landing/VisionSection';
+import VisionModal from './features/landing/VisionModal';
+import Footer from './layouts/Footer';
+import LoginPage from './pages/LoginPage';
+import RoleSelectionPage from './pages/RoleSelectionPage';
+import CitizenDashboard from './features/citizen/CitizenDashboard';
+import AshaDashboard from './features/asha/AshaDashboard';
+import DoctorDashboard from './features/doctor/DoctorDashboard';
+import DhoDashboard from './features/dho/DhoDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleGuard from './components/RoleGuard';
-import DemoModeModal from './components/DemoModeModal';
-import DemoControlCenter from './components/DemoControlCenter';
-import { 
-  AuthorizationService, 
-  UserProfile, 
-  UserRole 
-} from './services/AuthorizationService';
-import { ActiveModalType } from './types';
+import DemoModeModal from './features/demo/DemoModeModal';
+import DemoControlCenter from './features/demo/DemoControlCenter';
+import { AuthorizationService } from './services/AuthorizationService';
+import { ActiveModalType, UserProfile, UserRole } from './types';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { auth } from './lib/firebase';
 import { Activity } from 'lucide-react';

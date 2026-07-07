@@ -17,7 +17,7 @@ import {
   Lock,
   ArrowRight
 } from 'lucide-react';
-import { DistrictIntelligenceMetrics } from '../services/districtAnalyticsService';
+import { DistrictIntelligenceMetrics } from '../../types';
 
 interface OperationalInsightCard {
   title: string;

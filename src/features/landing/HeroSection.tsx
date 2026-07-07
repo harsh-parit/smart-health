@@ -6,7 +6,7 @@
 import { motion } from 'motion/react';
 import { ArrowRight, Server, Laptop, Play } from 'lucide-react';
 import HeroIllustration from './HeroIllustration';
-import { ActiveModalType } from '../types';
+import { ActiveModalType } from '../../types';
 
 interface HeroSectionProps {
   onGetStarted: (type: ActiveModalType) => void;

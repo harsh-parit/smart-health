@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Activity, Github, ShieldAlert, Award, Globe, Heart, Mail, Phone, MapPin } from 'lucide-react';
+import { Activity, Github, ShieldAlert, Award, Heart, Mail, Phone, MapPin } from 'lucide-react';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();

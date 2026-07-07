@@ -11,40 +11,7 @@ import {
   serverTimestamp,
   getDocFromServer
 } from 'firebase/firestore';
-import type { SymptomAnalysisResponse } from './geminiService';
-
-export interface PatientInformation {
-  fullName: string;
-  age: number;
-  gender: string;
-  village: string;
-  district: string;
-}
-
-export interface MedicalHistory {
-  chronicDiseases: string[];
-  medications: string[];
-  allergies: string[];
-}
-
-export interface SavedReport {
-  id?: string; // Firestore document ID
-  reportId: string;
-  patientId: string;
-  patientInformation: PatientInformation;
-  medicalHistory: MedicalHistory;
-  symptoms: string;
-  uploadedDocuments: { name: string; type: string; size: string; date: string }[];
-  geminiAnalysis: SymptomAnalysisResponse;
-  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
-  confidence: number;
-  recommendedAction: string;
-  doctorSummary: string;
-  medicalDisclaimer: string;
-  status: 'Pending Doctor Review' | 'Reviewed' | 'Completed';
-  createdAt: any;
-  updatedAt: any;
-}
+import { PatientInformation, MedicalHistory, SavedReport } from '../types';
 
 /**
  * Generates the next sequential unique report ID matching format SHAI-2026-XXXXXX.

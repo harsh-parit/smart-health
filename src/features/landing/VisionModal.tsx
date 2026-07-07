@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Shield, Cpu, Users, Layers, Award, Sparkles, CheckCircle2 } from 'lucide-react';
-import { ActiveModalType, FeatureDetail } from '../types';
+import { ActiveModalType, FeatureDetail } from '../../types';
 import React, { useState } from 'react';
 
 interface VisionModalProps {

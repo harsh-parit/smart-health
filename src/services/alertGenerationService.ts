@@ -12,24 +12,8 @@ import {
   serverTimestamp,
   updateDoc
 } from 'firebase/firestore';
-import { SavedReport } from './reportService';
+import { SavedReport, OutbreakAlert } from '../types';
 import { classifyDiseaseCategory } from './districtAnalyticsService';
-
-export interface OutbreakAlert {
-  id?: string;
-  alertId: string;
-  village: string;
-  district: string;
-  diseaseCategory: string;
-  numberOfCases: number;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  generatedAt: string;
-  status: 'Active' | 'Assigned' | 'Resolved';
-  recommendedAction: string;
-  assignedTeam?: string;
-  notes?: string;
-  patientsAffected: number;
-}
 
 /**
  * Checks for clusters of HIGH risk reports from the same village within a time window.

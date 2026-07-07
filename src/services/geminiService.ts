@@ -4,46 +4,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 /**
  * Basic patient demographic and location information.
  */
-export interface PatientInformation {
-  fullName: string;
-  age: number;
-  gender: string;
-  village: string;
-  district: string;
-}
-
-/**
- * Relevant patient clinical and medical background.
- */
-export interface MedicalHistory {
-  chronicDiseases: string[];
-  medications: string[];
-  allergies: string[];
-}
-
-/**
- * Payload required to request a clinical symptom analysis and triage.
- */
-export interface SymptomAnalysisRequest {
-  patientInformation: PatientInformation;
-  symptoms: string[];
-  medicalHistory: MedicalHistory;
-  pregnancyStatus?: string;
-}
-
-/**
- * Structured response returned by the clinical symptom triage analysis.
- */
-export interface SymptomAnalysisResponse {
-  patientSummary: string;
-  detectedSymptoms: string[];
-  possibleHealthConcerns: string[];
-  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
-  confidence: number; // Percentage score (0 - 100)
-  recommendedAction: string;
-  doctorSummary: string;
-  medicalDisclaimer: string;
-}
+import { PatientInformation, MedicalHistory, SymptomAnalysisRequest, SymptomAnalysisResponse } from '../types';
 
 /**
  * Helper to fetch the Gemini API key from standard Vite and Node environments.

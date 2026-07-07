@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { ShieldAlert, ArrowLeft, KeyRound, Activity } from 'lucide-react';
-import { UserRole, UserProfile } from '../services/AuthorizationService';
+import { UserRole, UserProfile } from '../types';
 
 interface RoleGuardProps {
   userProfile: UserProfile | null;
