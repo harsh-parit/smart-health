@@ -55,7 +55,10 @@ import {
   Settings,
   RefreshCw,
   Clock,
-  Briefcase
+  Briefcase,
+  Baby,
+  Award,
+  Pill
 } from 'lucide-react';
 
 interface DhoDashboardProps {
@@ -114,6 +117,11 @@ export default function DhoDashboard({ onBackToRoles, onLogout }: DhoDashboardPr
   // Navigation Tabs including custom sub-actions
   const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'alerts' | 'inventory' | 'reports'>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Advanced Health Analytics Dashboard state
+  const [analyticsTimeFilter, setAnalyticsTimeFilter] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [analyticsBlockFilter, setAnalyticsBlockFilter] = useState<'All' | 'Datia' | 'Bhander' | 'Indergarh' | 'Seondha'>('All');
+  const [activeAnalyticsSection, setActiveAnalyticsSection] = useState<'all' | 'disease' | 'referrals' | 'maternal' | 'child' | 'medicine' | 'phc'>('all');
 
   // Success Notification state
   const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
@@ -297,6 +305,285 @@ export default function DhoDashboard({ onBackToRoles, onLogout }: DhoDashboardPr
     { block: 'Indergarh', ASHA: 52, PHC: 41, District: 18 },
     { block: 'Seondha', ASHA: 29, PHC: 22, District: 8 },
   ];
+
+  // Dynamic Multi-Dimensional Health Analytics Dataset Generator (No Firebase/AI)
+  const getDashboardAnalyticsData = () => {
+    const multiplier = analyticsBlockFilter === 'All' ? 1.0 :
+                       analyticsBlockFilter === 'Datia' ? 0.38 :
+                       analyticsBlockFilter === 'Bhander' ? 0.21 :
+                       analyticsBlockFilter === 'Indergarh' ? 0.24 : 0.17;
+    
+    const scale = (val: number) => Math.max(1, Math.round(val * multiplier));
+
+    if (analyticsTimeFilter === 'weekly') {
+      return {
+        summaryCards: [
+          { title: 'Disease Burden', value: `${scale(312)} Cases`, subtext: 'Total Active Syndromic cases', change: '-4.2%', isPositive: true, icon: Activity, color: 'text-indigo-600', bg: 'bg-indigo-50/50', border: 'border-indigo-100', section: 'disease' as const },
+          { title: 'Referral Flow Rate', value: '18.2%', subtext: `${scale(44)} escalations routed`, change: '+1.5%', isPositive: false, icon: Truck, color: 'text-amber-600', bg: 'bg-amber-50/50', border: 'border-amber-100', section: 'referrals' as const },
+          { title: 'Maternal Vigilance', value: `${scale(28)} Mothers`, subtext: 'High-risk trimesters active', change: '-3 cases', isPositive: true, icon: Heart, color: 'text-rose-600', bg: 'bg-rose-50/50', border: 'border-rose-100', section: 'maternal' as const },
+          { title: 'Child Immunization', value: '92.4%', subtext: `${scale(145)} infants monitored`, change: '+0.8%', isPositive: true, icon: Baby, color: 'text-emerald-600', bg: 'bg-emerald-50/50', border: 'border-emerald-100', section: 'child' as const },
+          { title: 'Medicine Replenish', value: `${scale(2)} Items Low`, subtext: 'Essential drugs below safety', change: '0 Change', isPositive: true, icon: Pill, color: 'text-purple-600', bg: 'bg-purple-50/50', border: 'border-purple-100', section: 'medicine' as const },
+          { title: 'PHC Action Velocity', value: '12.4m Avg', subtext: 'Median emergency dispatch speed', change: '-2.1m (Faster)', isPositive: true, icon: Award, color: 'text-cyan-600', bg: 'bg-cyan-50/50', border: 'border-cyan-100', section: 'phc' as const },
+        ],
+        diseasePieData: [
+          { name: 'Hypertension', value: scale(92), color: '#3B82F6' },
+          { name: 'Diabetes Type 2', value: scale(65), color: '#8B5CF6' },
+          { name: 'Gastroenteritis', value: scale(45), color: '#F59E0B' },
+          { name: 'Respiratory Inf.', value: scale(58), color: '#10B981' },
+          { name: 'Malaria & Fevers', value: scale(25), color: '#EF4444' },
+        ],
+        diseaseTrendData: [
+          { name: 'Mon', Infectious: scale(12), NonInfectious: scale(32), Chronic: scale(45) },
+          { name: 'Tue', Infectious: scale(15), NonInfectious: scale(35), Chronic: scale(48) },
+          { name: 'Wed', Infectious: scale(18), NonInfectious: scale(30), Chronic: scale(50) },
+          { name: 'Thu', Infectious: scale(14), NonInfectious: scale(38), Chronic: scale(46) },
+          { name: 'Fri', Infectious: scale(22), NonInfectious: scale(42), Chronic: scale(52) },
+          { name: 'Sat', Infectious: scale(25), NonInfectious: scale(40), Chronic: scale(55) },
+          { name: 'Sun', Infectious: scale(20), NonInfectious: scale(36), Chronic: scale(49) },
+        ],
+        referralFlowData: [
+          { name: 'Mon', ASHA: scale(15), PHC: scale(12), District: scale(8) },
+          { name: 'Tue', ASHA: scale(18), PHC: scale(14), District: scale(9) },
+          { name: 'Wed', ASHA: scale(12), PHC: scale(10), District: scale(6) },
+          { name: 'Thu', ASHA: scale(16), PHC: scale(13), District: scale(8) },
+          { name: 'Fri', ASHA: scale(22), PHC: scale(18), District: scale(11) },
+          { name: 'Sat', ASHA: scale(24), PHC: scale(20), District: scale(13) },
+          { name: 'Sun', ASHA: scale(19), PHC: scale(15), District: scale(10) },
+        ],
+        referralReasons: [
+          { reason: 'Cardio-Respiratory', percentage: 35, count: scale(28), status: 'critical' as const },
+          { reason: 'Maternal Distress', percentage: 28, count: scale(22), status: 'high' as const },
+          { reason: 'Severe Dehydration', percentage: 20, count: scale(16), status: 'high' as const },
+          { reason: 'Pediatric Infection', percentage: 17, count: scale(14), status: 'medium' as const },
+        ],
+        maternalHealthData: [
+          { name: 'Mon', ANC1: scale(15), ANC4: scale(10), Institutional: scale(8), Home: scale(1) },
+          { name: 'Tue', ANC1: scale(18), ANC4: scale(12), Institutional: scale(9), Home: scale(2) },
+          { name: 'Wed', ANC1: scale(12), ANC4: scale(8), Institutional: scale(6), Home: scale(1) },
+          { name: 'Thu', ANC1: scale(16), ANC4: scale(11), Institutional: scale(8), Home: scale(1) },
+          { name: 'Fri', ANC1: scale(22), ANC4: scale(15), Institutional: scale(11), Home: scale(2) },
+          { name: 'Sat', ANC1: scale(24), ANC4: scale(17), Institutional: scale(13), Home: scale(2) },
+          { name: 'Sun', ANC1: scale(19), ANC4: scale(13), Institutional: scale(10), Home: scale(1) },
+        ],
+        maternalRiskFactors: [
+          { name: 'Severe Anemia (Hb < 8)', cases: scale(14), rate: '32.4%', severity: 'Critical' },
+          { name: 'Gestational Diabetes', cases: scale(8), rate: '13.8%', severity: 'Medium' },
+          { name: 'Pre-eclampsia (BP > 140/90)', cases: scale(11), rate: '11.5%', severity: 'Critical' },
+          { name: 'Multiple Gestation', cases: scale(3), rate: '3.8%', severity: 'Medium' },
+        ],
+        childHealthData: [
+          { name: 'Mon', FullyVaccinated: scale(32), SAM: scale(4), MAM: scale(12) },
+          { name: 'Tue', FullyVaccinated: scale(35), SAM: scale(5), MAM: scale(14) },
+          { name: 'Wed', FullyVaccinated: scale(30), SAM: scale(4), MAM: scale(11) },
+          { name: 'Thu', FullyVaccinated: scale(38), SAM: scale(3), MAM: scale(13) },
+          { name: 'Fri', FullyVaccinated: scale(42), SAM: scale(5), MAM: scale(16) },
+          { name: 'Sat', FullyVaccinated: scale(40), SAM: scale(4), MAM: scale(15) },
+          { name: 'Sun', FullyVaccinated: scale(36), SAM: scale(3), MAM: scale(12) },
+        ],
+        childImmunizationBreakdown: [
+          { name: 'Mon', BCG: scale(12), OPV3: scale(10), Pentavalent3: scale(8), MR1: scale(6) },
+          { name: 'Tue', BCG: scale(14), OPV3: scale(12), Pentavalent3: scale(9), MR1: scale(7) },
+          { name: 'Wed', BCG: scale(11), OPV3: scale(9), Pentavalent3: scale(7), MR1: scale(5) },
+          { name: 'Thu', BCG: scale(15), OPV3: scale(13), Pentavalent3: scale(10), MR1: scale(8) },
+          { name: 'Fri', BCG: scale(17), OPV3: scale(15), Pentavalent3: scale(12), MR1: scale(10) },
+          { name: 'Sat', BCG: scale(16), OPV3: scale(14), Pentavalent3: scale(11), MR1: scale(9) },
+          { name: 'Sun', BCG: scale(14), OPV3: scale(12), Pentavalent3: scale(9), MR1: scale(7) },
+        ],
+        medicineUsageData: [
+          { name: 'Paracetamol', Consumed: scale(1200), StockLevel: scale(14200) },
+          { name: 'Amoxicillin', Consumed: scale(850), StockLevel: scale(1200) },
+          { name: 'Metformin', Consumed: scale(950), StockLevel: scale(8500) },
+          { name: 'ORS Packets', Consumed: scale(1400), StockLevel: scale(4500) },
+          { name: 'MR Vaccine', Consumed: scale(180), StockLevel: scale(620) },
+        ],
+        medicineStockoutRisk: [
+          { name: 'Amoxicillin 250mg', stock: scale(1200), minNeeded: scale(4000), daysLeft: 4, risk: 'High' as const },
+          { name: 'Measles-Rubella Vaccine', stock: scale(80), minNeeded: scale(500), daysLeft: 5, risk: 'High' as const },
+          { name: 'Insulin Glargine 100 IU', stock: scale(45), minNeeded: scale(200), daysLeft: 7, risk: 'High' as const },
+          { name: 'Amlodipine 5mg', stock: scale(3200), minNeeded: scale(3000), daysLeft: 15, risk: 'Medium' as const },
+        ],
+        phcPerformanceData: [
+          { name: 'Datia Central PHC', consultations: scale(450), responseTime: '8.5m', satisfaction: 94, drugsAvailability: 92, maternalReferrals: scale(12), immunizationRate: 94, rating: 4.8 },
+          { name: 'Bhander PHC', consultations: scale(280), responseTime: '12.4m', satisfaction: 89, drugsAvailability: 81, maternalReferrals: scale(8), immunizationRate: 91, rating: 4.3 },
+          { name: 'Indergarh PHC', consultations: scale(320), responseTime: '14.1m', satisfaction: 87, drugsAvailability: 83, maternalReferrals: scale(11), immunizationRate: 88, rating: 4.1 },
+          { name: 'Seondha PHC', consultations: scale(220), responseTime: '16.8m', satisfaction: 86, drugsAvailability: 78, maternalReferrals: scale(6), immunizationRate: 86, rating: 3.9 },
+          { name: 'Unao PHC', consultations: scale(190), responseTime: '10.2m', satisfaction: 92, drugsAvailability: 88, maternalReferrals: scale(5), immunizationRate: 92, rating: 4.6 },
+        ]
+      };
+    } else if (analyticsTimeFilter === 'monthly') {
+      return {
+        summaryCards: [
+          { title: 'Disease Burden', value: `${scale(1482)} Cases`, subtext: 'Total Active Syndromic cases', change: '-1.8%', isPositive: true, icon: Activity, color: 'text-indigo-600', bg: 'bg-indigo-50/50', border: 'border-indigo-100', section: 'disease' as const },
+          { title: 'Referral Flow Rate', value: '16.4%', subtext: `${scale(195)} escalations routed`, change: '-0.5%', isPositive: true, icon: Truck, color: 'text-amber-600', bg: 'bg-amber-50/50', border: 'border-amber-100', section: 'referrals' as const },
+          { title: 'Maternal Vigilance', value: `${scale(98)} Mothers`, subtext: 'High-risk trimesters active', change: '-12 cases', isPositive: true, icon: Heart, color: 'text-rose-600', bg: 'bg-rose-50/50', border: 'border-rose-100', section: 'maternal' as const },
+          { title: 'Child Immunization', value: '91.2%', subtext: `${scale(580)} infants monitored`, change: '+1.4%', isPositive: true, icon: Baby, color: 'text-emerald-600', bg: 'bg-emerald-50/50', border: 'border-emerald-100', section: 'child' as const },
+          { title: 'Medicine Replenish', value: `${scale(3)} Items Low`, subtext: 'Essential drugs below safety', change: '+1 Item Low', isPositive: false, icon: Pill, color: 'text-purple-600', bg: 'bg-purple-50/50', border: 'border-purple-100', section: 'medicine' as const },
+          { title: 'PHC Action Velocity', value: '13.5m Avg', subtext: 'Median emergency dispatch speed', change: '-1.4m (Faster)', isPositive: true, icon: Award, color: 'text-cyan-600', bg: 'bg-cyan-50/50', border: 'border-cyan-100', section: 'phc' as const },
+        ],
+        diseasePieData: [
+          { name: 'Hypertension', value: scale(412), color: '#3B82F6' },
+          { name: 'Diabetes Type 2', value: scale(298), color: '#8B5CF6' },
+          { name: 'Gastroenteritis', value: scale(189), color: '#F59E0B' },
+          { name: 'Respiratory Inf.', value: scale(245), color: '#10B981' },
+          { name: 'Malaria & Fevers', value: scale(115), color: '#EF4444' },
+        ],
+        diseaseTrendData: [
+          { name: 'Week 1', Infectious: scale(45), NonInfectious: scale(142), Chronic: scale(180) },
+          { name: 'Week 2', Infectious: scale(52), NonInfectious: scale(155), Chronic: scale(192) },
+          { name: 'Week 3', Infectious: scale(64), NonInfectious: scale(138), Chronic: scale(204) },
+          { name: 'Week 4', Infectious: scale(58), NonInfectious: scale(162), Chronic: scale(188) },
+        ],
+        referralFlowData: [
+          { name: 'Week 1', ASHA: scale(62), PHC: scale(48), District: scale(32) },
+          { name: 'Week 2', ASHA: scale(75), PHC: scale(58), District: scale(38) },
+          { name: 'Week 3', ASHA: scale(88), PHC: scale(69), District: scale(46) },
+          { name: 'Week 4', ASHA: scale(70), PHC: scale(54), District: scale(35) },
+        ],
+        referralReasons: [
+          { reason: 'Cardio-Respiratory', percentage: 38, count: scale(114), status: 'critical' as const },
+          { reason: 'Maternal Distress', percentage: 26, count: scale(78), status: 'high' as const },
+          { reason: 'Severe Dehydration', percentage: 18, count: scale(54), status: 'high' as const },
+          { reason: 'Pediatric Infection', percentage: 18, count: scale(54), status: 'medium' as const },
+        ],
+        maternalHealthData: [
+          { name: 'Week 1', ANC1: scale(95), ANC4: scale(72), Institutional: scale(58), Home: scale(10) },
+          { name: 'Week 2', ANC1: scale(110), ANC4: scale(84), Institutional: scale(68), Home: scale(12) },
+          { name: 'Week 3', ANC1: scale(125), ANC4: scale(96), Institutional: scale(79), Home: scale(14) },
+          { name: 'Week 4', ANC1: scale(105), ANC4: scale(80), Institutional: scale(65), Home: scale(11) },
+        ],
+        maternalRiskFactors: [
+          { name: 'Severe Anemia (Hb < 8)', cases: scale(54), rate: '31.5%', severity: 'Critical' },
+          { name: 'Gestational Diabetes', cases: scale(32), rate: '13.9%', severity: 'Medium' },
+          { name: 'Pre-eclampsia (BP > 140/90)', cases: scale(28), rate: '11.8%', severity: 'Critical' },
+          { name: 'Multiple Gestation', cases: scale(9), rate: '3.9%', severity: 'Medium' },
+        ],
+        childHealthData: [
+          { name: 'Week 1', FullyVaccinated: scale(120), SAM: scale(16), MAM: scale(48) },
+          { name: 'Week 2', FullyVaccinated: scale(135), SAM: scale(18), MAM: scale(55) },
+          { name: 'Week 3', FullyVaccinated: scale(150), SAM: scale(22), MAM: scale(62) },
+          { name: 'Week 4', FullyVaccinated: scale(130), SAM: scale(15), MAM: scale(50) },
+        ],
+        childImmunizationBreakdown: [
+          { name: 'Week 1', BCG: scale(48), OPV3: scale(40), Pentavalent3: scale(32), MR1: scale(25) },
+          { name: 'Week 2', BCG: scale(55), OPV3: scale(46), Pentavalent3: scale(38), MR1: scale(30) },
+          { name: 'Week 3', BCG: scale(62), OPV3: scale(52), Pentavalent3: scale(44), MR1: scale(35) },
+          { name: 'Week 4', BCG: scale(52), OPV3: scale(44), Pentavalent3: scale(36), MR1: scale(28) },
+        ],
+        medicineUsageData: [
+          { name: 'Paracetamol', Consumed: scale(5200), StockLevel: scale(14200) },
+          { name: 'Amoxicillin', Consumed: scale(3400), StockLevel: scale(1200) },
+          { name: 'Metformin', Consumed: scale(3900), StockLevel: scale(8500) },
+          { name: 'ORS Packets', Consumed: scale(5800), StockLevel: scale(4500) },
+          { name: 'MR Vaccine', Consumed: scale(780), StockLevel: scale(620) },
+        ],
+        medicineStockoutRisk: [
+          { name: 'Amoxicillin 250mg', stock: scale(1200), minNeeded: scale(4000), daysLeft: 4, risk: 'High' as const },
+          { name: 'Measles-Rubella Vaccine', stock: scale(80), minNeeded: scale(500), daysLeft: 5, risk: 'High' as const },
+          { name: 'Insulin Glargine 100 IU', stock: scale(45), minNeeded: scale(200), daysLeft: 7, risk: 'High' as const },
+          { name: 'Amlodipine 5mg', stock: scale(3200), minNeeded: scale(3000), daysLeft: 15, risk: 'Medium' as const },
+        ],
+        phcPerformanceData: [
+          { name: 'Datia Central PHC', consultations: scale(1800), responseTime: '8.5m', satisfaction: 94, drugsAvailability: 92, maternalReferrals: scale(45), immunizationRate: 94, rating: 4.8 },
+          { name: 'Bhander PHC', consultations: scale(1120), responseTime: '12.4m', satisfaction: 89, drugsAvailability: 81, maternalReferrals: scale(32), immunizationRate: 91, rating: 4.3 },
+          { name: 'Indergarh PHC', consultations: scale(1250), responseTime: '14.1m', satisfaction: 87, drugsAvailability: 83, maternalReferrals: scale(38), immunizationRate: 88, rating: 4.1 },
+          { name: 'Seondha PHC', consultations: scale(880), responseTime: '16.8m', satisfaction: 86, drugsAvailability: 78, maternalReferrals: scale(22), immunizationRate: 86, rating: 3.9 },
+          { name: 'Unao PHC', consultations: scale(750), responseTime: '10.2m', satisfaction: 92, drugsAvailability: 88, maternalReferrals: scale(18), immunizationRate: 92, rating: 4.6 },
+        ]
+      };
+    } else {
+      return {
+        summaryCards: [
+          { title: 'Disease Burden', value: `${scale(18542)} Cases`, subtext: 'Total Active Syndromic cases', change: '+3.1%', isPositive: false, icon: Activity, color: 'text-indigo-600', bg: 'bg-indigo-50/50', border: 'border-indigo-100', section: 'disease' as const },
+          { title: 'Referral Flow Rate', value: '14.8%', subtext: `${scale(2145)} escalations routed`, change: '-1.2%', isPositive: true, icon: Truck, color: 'text-amber-600', bg: 'bg-amber-50/50', border: 'border-amber-100', section: 'referrals' as const },
+          { title: 'Maternal Vigilance', value: `${scale(1120)} Mothers`, subtext: 'High-risk trimesters active', change: '-140 cases', isPositive: true, icon: Heart, color: 'text-rose-600', bg: 'bg-rose-50/50', border: 'border-rose-100', section: 'maternal' as const },
+          { title: 'Child Immunization', value: '93.8%', subtext: `${scale(6900)} infants monitored`, change: '+2.1%', isPositive: true, icon: Baby, color: 'text-emerald-600', bg: 'bg-emerald-50/50', border: 'border-emerald-100', section: 'child' as const },
+          { title: 'Medicine Replenish', value: `${scale(0)} Items Low`, subtext: 'Essential drugs below safety', change: '-3 Items Low', isPositive: true, icon: Pill, color: 'text-purple-600', bg: 'bg-purple-50/50', border: 'border-purple-100', section: 'medicine' as const },
+          { title: 'PHC Action Velocity', value: '11.8m Avg', subtext: 'Median emergency dispatch speed', change: '-2.4m (Faster)', isPositive: true, icon: Award, color: 'text-cyan-600', bg: 'bg-cyan-50/50', border: 'border-cyan-100', section: 'phc' as const },
+        ],
+        diseasePieData: [
+          { name: 'Hypertension', value: scale(4850), color: '#3B82F6' },
+          { name: 'Diabetes Type 2', value: scale(3240), color: '#8B5CF6' },
+          { name: 'Gastroenteritis', value: scale(1890), color: '#F59E0B' },
+          { name: 'Respiratory Inf.', value: scale(2840), color: '#10B981' },
+          { name: 'Malaria & Fevers', value: scale(1250), color: '#EF4444' },
+        ],
+        diseaseTrendData: [
+          { name: 'Jan-Feb', Infectious: scale(420), NonInfectious: scale(1520), Chronic: scale(2100) },
+          { name: 'Mar-Apr', Infectious: scale(480), NonInfectious: scale(1640), Chronic: scale(2240) },
+          { name: 'May-Jun', Infectious: scale(650), NonInfectious: scale(1480), Chronic: scale(2180) },
+          { name: 'Jul-Aug', Infectious: scale(720), NonInfectious: scale(1550), Chronic: scale(2300) },
+          { name: 'Sep-Oct', Infectious: scale(510), NonInfectious: scale(1720), Chronic: scale(2450) },
+          { name: 'Nov-Dec', Infectious: scale(460), NonInfectious: scale(1680), Chronic: scale(2380) },
+        ],
+        referralFlowData: [
+          { name: 'Jan-Feb', ASHA: scale(650), PHC: scale(510), District: scale(340) },
+          { name: 'Mar-Apr', ASHA: scale(720), PHC: scale(570), District: scale(380) },
+          { name: 'May-Jun', ASHA: scale(810), PHC: scale(640), District: scale(430) },
+          { name: 'Jul-Aug', ASHA: scale(880), PHC: scale(700), District: scale(480) },
+          { name: 'Sep-Oct', ASHA: scale(740), PHC: scale(580), District: scale(390) },
+          { name: 'Nov-Dec', ASHA: scale(690), PHC: scale(540), District: scale(360) },
+        ],
+        referralReasons: [
+          { reason: 'Cardio-Respiratory', percentage: 36, count: scale(1220), status: 'critical' as const },
+          { reason: 'Maternal Distress', percentage: 25, count: scale(840), status: 'high' as const },
+          { reason: 'Severe Dehydration', percentage: 20, count: scale(680), status: 'high' as const },
+          { reason: 'Pediatric Infection', percentage: 19, count: scale(640), status: 'medium' as const },
+        ],
+        maternalHealthData: [
+          { name: 'Jan-Feb', ANC1: scale(980), ANC4: scale(780), Institutional: scale(640), Home: scale(110) },
+          { name: 'Mar-Apr', ANC1: scale(1050), ANC4: scale(840), Institutional: scale(690), Home: scale(120) },
+          { name: 'May-Jun', ANC1: scale(1200), ANC4: scale(950), Institutional: scale(790), Home: scale(140) },
+          { name: 'Jul-Aug', ANC1: scale(1310), ANC4: scale(1020), Institutional: scale(860), Home: scale(130) },
+          { name: 'Sep-Oct', ANC1: scale(1150), ANC4: scale(910), Institutional: scale(760), Home: scale(120) },
+          { name: 'Nov-Dec', ANC1: scale(1080), ANC4: scale(860), Institutional: scale(710), Home: scale(110) },
+        ],
+        maternalRiskFactors: [
+          { name: 'Severe Anemia (Hb < 8)', cases: scale(420), rate: '30.4%', severity: 'Critical' },
+          { name: 'Gestational Diabetes', cases: scale(210), rate: '13.8%', severity: 'Medium' },
+          { name: 'Pre-eclampsia (BP > 140/90)', cases: scale(190), rate: '11.3%', severity: 'Critical' },
+          { name: 'Multiple Gestation', cases: scale(60), rate: '3.9%', severity: 'Medium' },
+        ],
+        childHealthData: [
+          { name: 'Jan-Feb', FullyVaccinated: scale(1150), SAM: scale(160), MAM: scale(490) },
+          { name: 'Mar-Apr', FullyVaccinated: scale(1220), SAM: scale(180), MAM: scale(530) },
+          { name: 'May-Jun', FullyVaccinated: scale(1340), SAM: scale(210), MAM: scale(620) },
+          { name: 'Jul-Aug', FullyVaccinated: scale(1480), SAM: scale(190), MAM: scale(580) },
+          { name: 'Sep-Oct', FullyVaccinated: scale(1290), SAM: scale(170), MAM: scale(510) },
+          { name: 'Nov-Dec', FullyVaccinated: scale(1210), SAM: scale(150), MAM: scale(460) },
+        ],
+        childImmunizationBreakdown: [
+          { name: 'Jan-Feb', BCG: scale(490), OPV3: scale(410), Pentavalent3: scale(330), MR1: scale(260) },
+          { name: 'Mar-Apr', BCG: scale(530), OPV3: scale(450), Pentavalent3: scale(370), MR1: scale(290) },
+          { name: 'May-Jun', BCG: scale(610), OPV3: scale(520), Pentavalent3: scale(430), MR1: scale(350) },
+          { name: 'Jul-Aug', BCG: scale(640), OPV3: scale(550), Pentavalent3: scale(460), MR1: scale(380) },
+          { name: 'Sep-Oct', BCG: scale(540), OPV3: scale(460), Pentavalent3: scale(380), MR1: scale(310) },
+          { name: 'Nov-Dec', BCG: scale(500), OPV3: scale(420), Pentavalent3: scale(340), MR1: scale(280) },
+        ],
+        medicineUsageData: [
+          { name: 'Paracetamol', Consumed: scale(58000), StockLevel: scale(14200) },
+          { name: 'Amoxicillin', Consumed: scale(39000), StockLevel: scale(1200) },
+          { name: 'Metformin', Consumed: scale(44000), StockLevel: scale(8500) },
+          { name: 'ORS Packets', Consumed: scale(61000), StockLevel: scale(4500) },
+          { name: 'MR Vaccine', Consumed: scale(8900), StockLevel: scale(620) },
+        ],
+        medicineStockoutRisk: [
+          { name: 'Amoxicillin 250mg', stock: scale(1200), minNeeded: scale(4000), daysLeft: 4, risk: 'High' as const },
+          { name: 'Measles-Rubella Vaccine', stock: scale(80), minNeeded: scale(500), daysLeft: 5, risk: 'High' as const },
+          { name: 'Insulin Glargine 100 IU', stock: scale(45), minNeeded: scale(200), daysLeft: 7, risk: 'High' as const },
+          { name: 'Amlodipine 5mg', stock: scale(3200), minNeeded: scale(3000), daysLeft: 15, risk: 'Medium' as const },
+        ],
+        phcPerformanceData: [
+          { name: 'Datia Central PHC', consultations: scale(21000), responseTime: '8.5m', satisfaction: 94, drugsAvailability: 92, maternalReferrals: scale(450), immunizationRate: 94, rating: 4.8 },
+          { name: 'Bhander PHC', consultations: scale(13800), responseTime: '12.4m', satisfaction: 89, drugsAvailability: 81, maternalReferrals: scale(320), immunizationRate: 91, rating: 4.3 },
+          { name: 'Indergarh PHC', consultations: scale(14900), responseTime: '14.1m', satisfaction: 87, drugsAvailability: 83, maternalReferrals: scale(380), immunizationRate: 88, rating: 4.1 },
+          { name: 'Seondha PHC', consultations: scale(10200), responseTime: '16.8m', satisfaction: 86, drugsAvailability: 78, maternalReferrals: scale(220), immunizationRate: 86, rating: 3.9 },
+          { name: 'Unao PHC', consultations: scale(9100), responseTime: '10.2m', satisfaction: 92, drugsAvailability: 88, maternalReferrals: scale(180), immunizationRate: 92, rating: 4.6 },
+        ]
+      };
+    }
+  };
+
+  const ad = getDashboardAnalyticsData();
 
   // Calculated Stats dynamically derived from real state!
   const statTotalPatients = 1482;
@@ -991,121 +1278,761 @@ export default function DhoDashboard({ onBackToRoles, onLogout }: DhoDashboardPr
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            {/* MD3 Title bar */}
-            <div className="bg-white border border-orange-100/30 rounded-[2rem] p-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div>
-                <span className="text-[9px] font-mono font-bold uppercase text-slate-400">Advanced Pathology Audit</span>
-                <h2 className="text-xl font-display font-black text-slate-900 mt-0.5">District Epidemiology Analytics Explorer</h2>
+            {/* MD3 Command Center Header */}
+            <div className="bg-white border border-slate-200/60 rounded-[2rem] p-6 shadow-xs flex flex-col xl:flex-row items-stretch justify-between gap-6">
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-indigo-500 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                  National Health Mission Telemetry Grid
+                </span>
+                <h2 className="text-2xl font-display font-black text-slate-900 leading-tight">
+                  District Clinical Health Analytics Command
+                </h2>
+                <p className="text-xs text-slate-500 max-w-2xl">
+                  Real-time syndromic, logistical, and maternal-child health metrics synthesized directly from local Primary Health Centers (PHCs) and active ASHA field kits.
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold text-slate-500">Block Territory:</span>
-                <select className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none">
-                  <option>All Blocks (Datia, Bhander, Indergarh, Seondha)</option>
-                  <option>Datia Block Only</option>
-                  <option>Bhander Block Only</option>
-                  <option>Indergarh Block Only</option>
-                </select>
+
+              {/* Responsive MD3 Filter Actions bar */}
+              <div className="flex flex-wrap items-center gap-4 self-center xl:self-end">
+                {/* Block Territory Selection */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-mono font-bold uppercase text-slate-400">Territory Filter</span>
+                  <div className="relative">
+                    <Filter className="w-3.5 h-3.5 text-indigo-500 absolute left-3 top-2.5" />
+                    <select
+                      value={analyticsBlockFilter}
+                      onChange={(e) => setAnalyticsBlockFilter(e.target.value as any)}
+                      className="pl-8 pr-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+                    >
+                      <option value="All">All Blocks (Datia, Bhander, Indergarh, Seondha)</option>
+                      <option value="Datia">Datia Block Only</option>
+                      <option value="Bhander">Bhander Block Only</option>
+                      <option value="Indergarh">Indergarh Block Only</option>
+                      <option value="Seondha">Seondha Block Only</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Time Filter Tabs */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-mono font-bold uppercase text-slate-400">Time Interval</span>
+                  <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    {(['weekly', 'monthly', 'yearly'] as const).map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setAnalyticsTimeFilter(t)}
+                        className={`px-3 py-1 text-xs font-bold rounded-lg uppercase tracking-wide transition-all ${
+                          analyticsTimeFilter === t
+                            ? 'bg-white text-indigo-600 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Complete interactive dashboard of charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* Analytics Summary Scorecards */}
-              <div className="bg-white border border-orange-100/30 rounded-[2rem] p-6 shadow-xs space-y-6 lg:col-span-1">
-                <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Epidemic Risk Scorecard</h3>
-                
-                <div className="space-y-4">
-                  <div className="bg-rose-50/30 border border-rose-100 rounded-2xl p-4">
-                    <span className="text-[9px] font-mono font-bold text-rose-500 uppercase block">UNAO CLUSTER RISK RATING</span>
-                    <div className="flex items-baseline gap-2 mt-1">
-                      <span className="text-2xl font-display font-black text-rose-700">HIGH</span>
-                      <span className="text-xs font-mono text-slate-400">(Score: 84/100)</span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
-                      Elevated risk calculated due to rapid temporal clustering of acute diarrhea symptoms. Water pipeline decontamination recommended.
-                    </p>
-                  </div>
-
-                  <div className="bg-emerald-50/30 border border-emerald-100 rounded-2xl p-4">
-                    <span className="text-[9px] font-mono font-bold text-emerald-600 uppercase block">CLINICAL DIAGNOSTIC ACCURACY</span>
-                    <div className="flex items-baseline gap-2 mt-1">
-                      <span className="text-2xl font-display font-black text-emerald-700">96.8%</span>
-                      <span className="text-xs font-mono text-slate-400">(Target: 95%)</span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
-                      High diagnostic concordance verified between regional ASHA field screening triggers and doctor telemedicine finalizations.
-                    </p>
-                  </div>
-
-                  <div className="bg-purple-50/30 border border-purple-100 rounded-2xl p-4">
-                    <span className="text-[9px] font-mono font-bold text-purple-600 uppercase block">TELEHEALTH TRIAGE EFFICIENCY</span>
-                    <div className="flex items-baseline gap-2 mt-1">
-                      <span className="text-2xl font-display font-black text-purple-700">14.2m</span>
-                      <span className="text-xs font-mono text-slate-400">(Median Response)</span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
-                      Average elapsed duration between ASHA rural triage uploads and attending specialist digital SOAP signature.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Big Area Chart: Long Term Pathogen Intake */}
-              <div className="bg-white border border-orange-100/30 rounded-[2rem] p-6 shadow-xs space-y-4 lg:col-span-2 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Pathology Volume Metrics</h3>
-                  <h4 className="text-base font-display font-black text-slate-900 mt-0.5">District Outbreak Volume & Pathology Vectors</h4>
-                </div>
-                
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={patientTrendData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                      <XAxis dataKey="name" stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
-                      <ChartTooltip contentStyle={{ background: '#0F172A', color: '#fff', borderRadius: '12px', border: 'none', fontSize: '11px' }} />
-                      <Legend wrapperStyle={{ fontSize: '11px' }} />
-                      <Area type="monotone" dataKey="Routine" stroke="#10B981" fillOpacity={0.15} fill="#10B981" name="Routine Health Diagnostics" />
-                      <Area type="monotone" dataKey="HighRisk" stroke="#F59E0B" fillOpacity={0.15} fill="#F59E0B" name="Active Vector Isolation Flags" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="text-[11px] text-slate-450 italic leading-relaxed pt-2 border-t border-slate-50 text-center">
-                  Live pathogen trend charts are generated directly from aggregate, anonymized PHC electronic health registers (EHR).
-                </div>
-              </div>
-
+            {/* Sub-section Navigation Focus Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-thin">
+              <button
+                onClick={() => setActiveAnalyticsSection('all')}
+                className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all ${
+                  activeAnalyticsSection === 'all'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Layers className="w-4 h-4" />
+                All Sections Dashboard
+              </button>
+              <button
+                onClick={() => setActiveAnalyticsSection('disease')}
+                className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all ${
+                  activeAnalyticsSection === 'disease'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Activity className="w-4 h-4" />
+                Disease Distribution
+              </button>
+              <button
+                onClick={() => setActiveAnalyticsSection('referrals')}
+                className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all ${
+                  activeAnalyticsSection === 'referrals'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Truck className="w-4 h-4" />
+                Referral Analytics
+              </button>
+              <button
+                onClick={() => setActiveAnalyticsSection('maternal')}
+                className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all ${
+                  activeAnalyticsSection === 'maternal'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Heart className="w-4 h-4" />
+                Maternal Health
+              </button>
+              <button
+                onClick={() => setActiveAnalyticsSection('child')}
+                className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all ${
+                  activeAnalyticsSection === 'child'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Baby className="w-4 h-4" />
+                Child Health
+              </button>
+              <button
+                onClick={() => setActiveAnalyticsSection('medicine')}
+                className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all ${
+                  activeAnalyticsSection === 'medicine'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Pill className="w-4 h-4" />
+                Medicine Stockpile
+              </button>
+              <button
+                onClick={() => setActiveAnalyticsSection('phc')}
+                className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shrink-0 transition-all ${
+                  activeAnalyticsSection === 'phc'
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Award className="w-4 h-4" />
+                PHC Performance
+              </button>
             </div>
 
-            {/* Demographics bento grid segment */}
-            <div className="bg-white border border-orange-100/30 rounded-[2rem] p-6 shadow-xs space-y-4">
-              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Population Stratification</h3>
-              <h4 className="text-base font-display font-black text-slate-900 mt-0.5">Age & Gender Stratified Risk Prevalence</h4>
-              
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-                <div className="border border-slate-100 p-4 rounded-2xl bg-slate-50/40">
-                  <span className="text-xs font-bold text-slate-400 block uppercase font-mono">Pediatric (0-12 Yrs)</span>
-                  <span className="text-xl font-display font-black text-slate-800 mt-1 block">18% of cases</span>
-                  <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">Normal baseline</span>
-                </div>
-                <div className="border border-slate-100 p-4 rounded-2xl bg-slate-50/40">
-                  <span className="text-xs font-bold text-slate-400 block uppercase font-mono">Maternal / Pregnant</span>
-                  <span className="text-xl font-display font-black text-orange-600 mt-1 block">6.4% of cases</span>
-                  <span className="text-[10px] text-amber-500 font-bold block mt-0.5">High vigilance active</span>
-                </div>
-                <div className="border border-slate-100 p-4 rounded-2xl bg-slate-50/40">
-                  <span className="text-xs font-bold text-slate-400 block uppercase font-mono">Adult (13-59 Yrs)</span>
-                  <span className="text-xl font-display font-black text-slate-800 mt-1 block">48.2% of cases</span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">Mainly occupational flu</span>
-                </div>
-                <div className="border border-slate-100 p-4 rounded-2xl bg-slate-50/40">
-                  <span className="text-xs font-bold text-slate-400 block uppercase font-mono">Geriatric (60+ Yrs)</span>
-                  <span className="text-xl font-display font-black text-rose-600 mt-1 block">27.4% of cases</span>
-                  <span className="text-[10px] text-rose-500 font-bold block mt-0.5">Cardiovascular risk alert</span>
-                </div>
-              </div>
+            {/* Professional Analytics Core KPI Scorecard Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              {ad.summaryCards.map((card, idx) => {
+                const IconComp = card.icon;
+                const isSelected = activeAnalyticsSection === card.section;
+                return (
+                  <motion.div
+                    key={idx}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    onClick={() => setActiveAnalyticsSection(card.section)}
+                    className={`bg-white border ${
+                      isSelected
+                        ? 'border-indigo-600 ring-2 ring-indigo-500/20 shadow-md'
+                        : 'border-slate-200 hover:border-slate-300 shadow-xs'
+                    } rounded-3xl p-4 cursor-pointer transition-all flex flex-col justify-between h-40`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className={`p-2.5 rounded-xl ${card.bg} ${card.color}`}>
+                        <IconComp className="w-5 h-5" />
+                      </div>
+                      <span
+                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                          card.isPositive
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-rose-50 text-rose-700'
+                        }`}
+                      >
+                        {card.change}
+                      </span>
+                    </div>
+
+                    <div className="mt-4">
+                      <span className="text-[10px] font-mono font-bold uppercase text-slate-450 block tracking-wider">
+                        {card.title}
+                      </span>
+                      <span className="text-lg font-display font-black text-slate-900 mt-0.5 block truncate">
+                        {card.value}
+                      </span>
+                    </div>
+
+                    <p className="text-[10px] text-slate-500 truncate mt-1 leading-none">
+                      {card.subtext}
+                    </p>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* DYNAMIC VIEW CONTAINER */}
+            <div className="space-y-8">
+              {/* 1. Disease Distribution Section */}
+              {(activeAnalyticsSection === 'all' || activeAnalyticsSection === 'disease') && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white border border-slate-200/60 rounded-[2rem] p-6 shadow-xs space-y-6"
+                >
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                        <Activity className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-display font-black text-slate-900">Disease Burden & Outbreak Sentinel</h3>
+                        <p className="text-xs text-slate-450 font-mono uppercase font-bold">Health Section I &bull; Diagnostic Distribution</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 bg-indigo-50/50 border border-indigo-100 px-3 py-1.5 rounded-xl">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
+                      Tracking {ad.diseasePieData.reduce((acc, curr) => acc + curr.value, 0)} Active Diagnoses
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Pie Chart */}
+                    <div className="lg:col-span-5 border border-slate-100 rounded-3xl p-5 flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Condition Prevalence</h4>
+                        <span className="text-sm font-display font-bold text-slate-800 block mt-0.5">Primary Disease Burden Allocation</span>
+                      </div>
+                      <div className="h-60 w-full flex items-center justify-center my-2">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={ad.diseasePieData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={80}
+                              paddingAngle={4}
+                              dataKey="value"
+                            >
+                              {ad.diseasePieData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <ChartTooltip
+                              contentStyle={{ background: '#0F172A', color: '#fff', borderRadius: '12px', border: 'none', fontSize: '11px' }}
+                              formatter={(value) => [`${value} cases`, 'Prevalence']}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] text-slate-600 font-bold border-t border-slate-50 pt-3">
+                        {ad.diseasePieData.map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                            <span className="truncate">{item.name}</span>
+                            <span className="text-slate-400 font-mono text-[10px] ml-auto">{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Trend Line Chart */}
+                    <div className="lg:col-span-7 border border-slate-100 rounded-3xl p-5 flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Pathogen & Chronic Vectors</h4>
+                        <span className="text-sm font-display font-bold text-slate-800 block mt-0.5">Clinical Classification Trends Over Time</span>
+                      </div>
+                      <div className="h-64 w-full my-3">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={ad.diseaseTrendData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="colorInfectious" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#EF4444" stopOpacity={0.15}/>
+                                <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
+                              </linearGradient>
+                              <linearGradient id="colorNonInfectious" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.15}/>
+                                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                              </linearGradient>
+                              <linearGradient id="colorChronic" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.15}/>
+                                <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                            <XAxis dataKey="name" stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                            <ChartTooltip contentStyle={{ background: '#0F172A', color: '#fff', borderRadius: '12px', border: 'none', fontSize: '11px' }} />
+                            <Legend wrapperStyle={{ fontSize: '11px' }} />
+                            <Area type="monotone" dataKey="Infectious" stroke="#EF4444" strokeWidth={2.5} fillOpacity={1} fill="url(#colorInfectious)" name="Active Outbreaks / Infectious" />
+                            <Area type="monotone" dataKey="NonInfectious" stroke="#3B82F6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorNonInfectious)" name="Non-Communicable" />
+                            <Area type="monotone" dataKey="Chronic" stroke="#8B5CF6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorChronic)" name="Geriatric Chronic Support" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <p className="text-[11px] text-slate-450 italic text-center border-t border-slate-50 pt-2 leading-none">
+                        Syndromic reporting alerts are cross-referenced with medical labs and telemedicine signs automatically.
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* 2. Referral Analytics Section */}
+              {(activeAnalyticsSection === 'all' || activeAnalyticsSection === 'referrals') && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white border border-slate-200/60 rounded-[2rem] p-6 shadow-xs space-y-6"
+                >
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl">
+                        <Truck className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-display font-black text-slate-900">Referral Pathways & Clinical Transit Funnel</h3>
+                        <p className="text-xs text-slate-450 font-mono uppercase font-bold">Health Section II &bull; Referral Funnel Optimization</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-mono font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-xl border border-amber-100">
+                      ASHA &rarr; PHC &rarr; District Hospital Pathway Active
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Funnel chart using Bar Chart */}
+                    <div className="lg:col-span-7 border border-slate-100 rounded-3xl p-5 flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Pathway Transition Volume</h4>
+                        <span className="text-sm font-display font-bold text-slate-800 block mt-0.5">Triage Stage Conversions & Leakage Ratios</span>
+                      </div>
+                      <div className="h-64 w-full my-3">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={ad.referralFlowData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                            <XAxis dataKey="name" stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                            <ChartTooltip contentStyle={{ background: '#0F172A', color: '#fff', borderRadius: '12px', border: 'none', fontSize: '11px' }} />
+                            <Legend wrapperStyle={{ fontSize: '11px' }} />
+                            <Bar dataKey="ASHA" fill="#EAB308" name="ASHA Identified Flags" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="PHC" fill="#A855F7" name="PHC Audited Referrals" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="District" fill="#F43F5E" name="District Admitted / Intervened" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <p className="text-[11px] text-slate-450 italic text-center border-t border-slate-50 pt-2 leading-none">
+                        Conversion efficiency target is set at &gt;85% triage completion under 60 minutes.
+                      </p>
+                    </div>
+
+                    {/* Referral Indications breakdown */}
+                    <div className="lg:col-span-5 border border-slate-100 rounded-3xl p-5 flex flex-col justify-between space-y-4">
+                      <div>
+                        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Emergency Trigger Reasons</h4>
+                        <span className="text-sm font-display font-bold text-slate-800 block mt-0.5">Clinical Referral Causes Profile</span>
+                      </div>
+                      
+                      <div className="space-y-3 flex-1 justify-center flex flex-col">
+                        {ad.referralReasons.map((item, idx) => (
+                          <div key={idx} className="space-y-1">
+                            <div className="flex justify-between text-xs font-bold">
+                              <span className="text-slate-700">{item.reason}</span>
+                              <span className="text-slate-400 font-mono">{item.count} cases ({item.percentage}%)</span>
+                            </div>
+                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${
+                                  item.status === 'critical'
+                                    ? 'bg-rose-500'
+                                    : item.status === 'high'
+                                    ? 'bg-amber-500'
+                                    : 'bg-indigo-500'
+                                }`}
+                                style={{ width: `${item.percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="bg-amber-50/50 border border-amber-100/50 p-3 rounded-2xl text-[10.5px] text-slate-600 leading-relaxed">
+                        <strong>Triage Insight:</strong> Cardio-Respiratory distress referrals have escalated by 4% in geriatric groups over high temperature block territory readings.
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* 3. Maternal Health Section */}
+              {(activeAnalyticsSection === 'all' || activeAnalyticsSection === 'maternal') && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white border border-slate-200/60 rounded-[2rem] p-6 shadow-xs space-y-6"
+                >
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl">
+                        <Heart className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-display font-black text-slate-900">Maternal Health Tracking & ANC Coverage</h3>
+                        <p className="text-xs text-slate-450 font-mono uppercase font-bold">Health Section III &bull; High Risk Pregnancy (HRP) Vigilance</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        showToastMessage('Urgent maternal monitoring team dispatched to high-risk pre-eclampsia mother in Unao village!');
+                      }}
+                      className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Trigger Maternal ASHA Dispatch
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Antenatal Care enrollment metrics */}
+                    <div className="lg:col-span-7 border border-slate-100 rounded-3xl p-5 flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Vigilance Timeline</h4>
+                        <span className="text-sm font-display font-bold text-slate-800 block mt-0.5">ANC Trimester Registrations vs Institutional Delivery Outcomes</span>
+                      </div>
+                      <div className="h-64 w-full my-3">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={ad.maternalHealthData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="colorANC1" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#EC4899" stopOpacity={0.15}/>
+                                <stop offset="95%" stopColor="#EC4899" stopOpacity={0}/>
+                              </linearGradient>
+                              <linearGradient id="colorANC4" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#6366F1" stopOpacity={0.15}/>
+                                <stop offset="95%" stopColor="#6366F1" stopOpacity={0}/>
+                              </linearGradient>
+                              <linearGradient id="colorInst" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10B981" stopOpacity={0.15}/>
+                                <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                            <XAxis dataKey="name" stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                            <ChartTooltip contentStyle={{ background: '#0F172A', color: '#fff', borderRadius: '12px', border: 'none', fontSize: '11px' }} />
+                            <Legend wrapperStyle={{ fontSize: '11px' }} />
+                            <Area type="monotone" dataKey="ANC1" stroke="#EC4899" strokeWidth={2} fillOpacity={1} fill="url(#colorANC1)" name="1st Trimester ANC Checks" />
+                            <Area type="monotone" dataKey="ANC4" stroke="#6366F1" strokeWidth={2} fillOpacity={1} fill="url(#colorANC4)" name="Completed 4x ANC Audits" />
+                            <Area type="monotone" dataKey="Institutional" stroke="#10B981" strokeWidth={2} fillOpacity={1} fill="url(#colorInst)" name="PHC Institutional Deliveries" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Maternal High Risk Profile Table */}
+                    <div className="lg:col-span-5 border border-slate-100 rounded-3xl p-5 flex flex-col justify-between">
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">High Risk Registry</h4>
+                          <span className="text-sm font-display font-bold text-slate-800 block mt-0.5">Active High Risk Pregnancies (HRP) Matrix</span>
+                        </div>
+
+                        <div className="divide-y divide-slate-100">
+                          {ad.maternalRiskFactors.map((hrp, idx) => (
+                            <div key={idx} className="py-2.5 flex items-center justify-between gap-3 text-xs">
+                              <div>
+                                <span className="font-bold text-slate-800 block">{hrp.name}</span>
+                                <span className="text-[10px] font-mono text-slate-450">District prevalence rate: {hrp.rate}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-mono font-black text-slate-800 block">{hrp.cases} Cases</span>
+                                <span
+                                  className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                                    hrp.severity === 'Critical'
+                                      ? 'bg-rose-50 text-rose-700'
+                                      : 'bg-amber-50 text-amber-700'
+                                  }`}
+                                >
+                                  {hrp.severity}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-50 border border-slate-150 p-3 rounded-2xl text-[10.5px] text-slate-500 font-mono flex items-center gap-2 mt-4">
+                        <Clock className="w-4 h-4 text-rose-500" />
+                        Live clinical audit synced 14 mins ago.
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* 4. Child Health Section */}
+              {(activeAnalyticsSection === 'all' || activeAnalyticsSection === 'child') && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white border border-slate-200/60 rounded-[2rem] p-6 shadow-xs space-y-6"
+                >
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+                        <Baby className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-display font-black text-slate-900">Child Welfare & Immunization Coverage</h3>
+                        <p className="text-xs text-slate-450 font-mono uppercase font-bold">Health Section IV &bull; Malnutrition (SAM/MAM) Monitoring</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-xl border border-emerald-100 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Vaccine Coverage: {analyticsTimeFilter === 'weekly' ? '92.4%' : '91.2%'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Vaccine Immunization breakdown */}
+                    <div className="lg:col-span-6 border border-slate-100 rounded-3xl p-5 flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Vaccination Benchmarks</h4>
+                        <span className="text-sm font-display font-bold text-slate-800 block mt-0.5">Antigen Coverage Progression by Cohort</span>
+                      </div>
+                      <div className="h-64 w-full my-3">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={ad.childImmunizationBreakdown} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                            <XAxis dataKey="name" stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                            <ChartTooltip contentStyle={{ background: '#0F172A', color: '#fff', borderRadius: '12px', border: 'none', fontSize: '11px' }} />
+                            <Legend wrapperStyle={{ fontSize: '11px' }} />
+                            <Bar dataKey="BCG" fill="#3B82F6" name="BCG (Birth)" stackId="a" />
+                            <Bar dataKey="OPV3" fill="#10B981" name="OPV 3rd Dose" stackId="a" />
+                            <Bar dataKey="Pentavalent3" fill="#EAB308" name="Penta 3rd" stackId="a" />
+                            <Bar dataKey="MR1" fill="#F43F5E" name="Measles/Rubella 1st" stackId="a" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Pediatric Malnutrition Trends */}
+                    <div className="lg:col-span-6 border border-slate-100 rounded-3xl p-5 flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Malnutrition Registry</h4>
+                        <span className="text-sm font-display font-bold text-slate-800 block mt-0.5">SAM & MAM Pediatric Nutritional Index Trends</span>
+                      </div>
+                      <div className="h-64 w-full my-3">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={ad.childHealthData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                            <XAxis dataKey="name" stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                            <ChartTooltip contentStyle={{ background: '#0F172A', color: '#fff', borderRadius: '12px', border: 'none', fontSize: '11px' }} />
+                            <Legend wrapperStyle={{ fontSize: '11px' }} />
+                            <Area type="monotone" dataKey="FullyVaccinated" stroke="#059669" strokeWidth={2.5} fillOpacity={0.08} fill="#059669" name="Vaccination Compliant Cohort" />
+                            <Area type="monotone" dataKey="SAM" stroke="#E11D48" strokeWidth={2.5} fillOpacity={0.08} fill="#E11D48" name="SAM (Severe Acute Malnutrition)" />
+                            <Area type="monotone" dataKey="MAM" stroke="#D97706" strokeWidth={2.5} fillOpacity={0.08} fill="#D97706" name="MAM (Moderate Acute Malnutrition)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* 5. Medicine Stockpile Usage Section */}
+              {(activeAnalyticsSection === 'all' || activeAnalyticsSection === 'medicine') && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white border border-slate-200/60 rounded-[2rem] p-6 shadow-xs space-y-6"
+                >
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl">
+                        <Pill className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-display font-black text-slate-900">Medicine Stockpile Consumables & Stockout Hazards</h3>
+                        <p className="text-xs text-slate-450 font-mono uppercase font-bold">Health Section V &bull; Pharmacy Logistics Audit</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        showToastMessage('Emergency dispatch of 5,000 tablets of Amoxicillin 250mg initiated to Seondha PHC Depot!');
+                      }}
+                      className="px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-xl text-xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" /> Approve Emergency Drug Dispatch
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Consumed vs Stock level Bar Chart */}
+                    <div className="lg:col-span-7 border border-slate-100 rounded-3xl p-5 flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Consumption Profile</h4>
+                        <span className="text-sm font-display font-bold text-slate-800 block mt-0.5">Drug Quantities Consumed vs Central Warehouses Reserve</span>
+                      </div>
+                      <div className="h-64 w-full my-3">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={ad.medicineUsageData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                            <XAxis dataKey="name" stroke="#94A3B8" fontSize={9} tickLine={false} axisLine={false} />
+                            <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                            <ChartTooltip contentStyle={{ background: '#0F172A', color: '#fff', borderRadius: '12px', border: 'none', fontSize: '11px' }} />
+                            <Legend wrapperStyle={{ fontSize: '11px' }} />
+                            <Bar dataKey="Consumed" fill="#8B5CF6" name="Total Units Consumed" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="StockLevel" fill="#C084FC" name="Stockpile On-Hand" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Stockout Hazards list */}
+                    <div className="lg:col-span-5 border border-slate-100 rounded-3xl p-5 flex flex-col justify-between">
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Depot Stock Alerts</h4>
+                          <span className="text-sm font-display font-bold text-slate-800 block mt-0.5">Critical Supply Disruption Warning List</span>
+                        </div>
+
+                        <div className="divide-y divide-slate-100">
+                          {ad.medicineStockoutRisk.map((med, idx) => (
+                            <div key={idx} className="py-2.5 flex items-center justify-between gap-3 text-xs">
+                              <div>
+                                <span className="font-bold text-slate-800 block">{med.name}</span>
+                                <span className="text-[10px] font-mono text-slate-450">Stock: {med.stock} / Safety Threshold: {med.minNeeded}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-mono font-bold text-rose-600 block">{med.daysLeft} days remaining</span>
+                                <span
+                                  className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                                    med.risk === 'High'
+                                      ? 'bg-rose-50 text-rose-700'
+                                      : 'bg-amber-50 text-amber-700'
+                                  }`}
+                                >
+                                  {med.risk} Risk
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="bg-purple-50/50 border border-purple-100 p-3 rounded-2xl text-[10.5px] text-purple-700 flex items-center gap-2 mt-4 font-bold">
+                        <Truck className="w-4 h-4" />
+                        Vaccines and hormones require refrigerated cold-chains.
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* 6. PHC Performance Section */}
+              {(activeAnalyticsSection === 'all' || activeAnalyticsSection === 'phc') && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white border border-slate-200/60 rounded-[2rem] p-6 shadow-xs space-y-6"
+                >
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-cyan-50 text-cyan-600 rounded-2xl">
+                        <Award className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-display font-black text-slate-900">PHC Performance & Quality Benchmarks</h3>
+                        <p className="text-xs text-slate-450 font-mono uppercase font-bold">Health Section VI &bull; Regional Clinical Operations Index</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        showToastMessage('Live PHC clinic registries synchronized successfully! Benchmarks updated.');
+                      }}
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" /> Re-index All Facilities
+                    </button>
+                  </div>
+
+                  {/* Leaderboard Table representing absolute realism */}
+                  <div className="border border-slate-100 rounded-3xl overflow-hidden bg-white">
+                    <div className="p-5 border-b border-slate-100">
+                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">PHC Operational Performance Scoreboard</h4>
+                      <span className="text-sm font-display font-bold text-slate-800 block mt-0.5">District Quality Indicators Comparison Matrix</span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-mono font-bold uppercase text-slate-500 tracking-wider">
+                            <th className="py-3.5 px-5">Facility / PHC</th>
+                            <th className="py-3.5 px-4 text-center">Consultations</th>
+                            <th className="py-3.5 px-4 text-center">Response Speed</th>
+                            <th className="py-3.5 px-4 text-center">Patient Rating</th>
+                            <th className="py-3.5 px-4 text-center">Drug Availability</th>
+                            <th className="py-3.5 px-4 text-center">Maternal Esc.</th>
+                            <th className="py-3.5 px-4 text-center">Immunization %</th>
+                            <th className="py-3.5 px-5 text-right">Score Card</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                          {ad.phcPerformanceData.map((phc, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="py-4 px-5">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full bg-slate-100 font-bold font-mono text-[10px] text-slate-500 flex items-center justify-center border border-slate-200">
+                                    0{idx + 1}
+                                  </div>
+                                  <div>
+                                    <span className="font-bold text-slate-800 block">{phc.name}</span>
+                                    <span className="text-[10px] text-slate-400">District Territory Region</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-4 px-4 text-center font-mono font-bold text-slate-800">
+                                {phc.consultations}
+                              </td>
+                              <td className="py-4 px-4 text-center font-mono">
+                                <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md font-bold">
+                                  {phc.responseTime}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <span className="text-amber-500 font-bold font-mono">&#9733; {phc.rating}</span>
+                                <span className="text-slate-450 text-[10px]"> ({phc.satisfaction}%)</span>
+                              </td>
+                              <td className="py-4 px-4 text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                  <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full ${
+                                        phc.drugsAvailability > 90 ? 'bg-emerald-500' : 'bg-amber-500'
+                                      }`}
+                                      style={{ width: `${phc.drugsAvailability}%` }}
+                                    />
+                                  </div>
+                                  <span className="font-mono text-[10px] font-bold">{phc.drugsAvailability}%</span>
+                                </div>
+                              </td>
+                              <td className="py-4 px-4 text-center font-mono font-bold text-slate-600">
+                                {phc.maternalReferrals}
+                              </td>
+                              <td className="py-4 px-4 text-center font-mono font-bold text-emerald-600">
+                                {phc.immunizationRate}%
+                              </td>
+                              <td className="py-4 px-5 text-right">
+                                <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-100">
+                                  EXCELLENT
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </motion.div>
         )}
