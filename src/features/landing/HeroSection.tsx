@@ -71,7 +71,10 @@ export default function HeroSection({ onGetStarted, onOpenDemo }: HeroSectionPro
             variants={itemVariants}
             className="text-sm sm:text-base md:text-lg text-slate-600 leading-relaxed font-sans max-w-2xl font-medium"
           >
-            Smart Health AI connects Citizens, ASHA Workers, Doctors and District Health Officers into one intelligent healthcare ecosystem powered by Gemini AI and Firebase.
+            JanArogya AI empowers Citizens, ASHA Workers,
+            Doctors, and District Health Officers through one
+            connected healthcare ecosystem powered by Gemini AI,
+            Firebase, and real-time public health intelligence.
           </motion.p>
 
           {/* Action Buttons */}
