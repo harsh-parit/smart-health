@@ -3125,7 +3125,7 @@ export default function AshaDashboard({ onBackToRoles, onLogout }: AshaDashboard
                                 setActiveTab('risk');
                                 startRiskVerification(patient.id);
                               }}
-                              className="flex-1 bg-slate-850 hover:bg-slate-900 text-white font-bold py-2 px-3 rounded-xl text-[10.5px] transition-all cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+                              className="flex-1 bg-[#ec003f] hover:bg-[#d40039] text-white font-bold py-2 px-3 rounded-xl text-[10.5px] transition-all cursor-pointer flex items-center justify-center gap-1 shadow-sm"
                             >
                               <Shield className="w-3.5 h-3.5" />
                               <span>Verify Risk</span>
