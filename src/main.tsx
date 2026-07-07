@@ -1,3 +1,6 @@
+import 'firebase/app';
+import 'firebase/auth';
+import 'firebase/firestore';
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';

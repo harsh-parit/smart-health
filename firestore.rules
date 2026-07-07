@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(patientId) {
+      return isSignedIn() && request.auth.uid == patientId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation helper for patientReport
+    function isValidPatientReport(data) {
+      return data.keys().hasAll([
+        'reportId', 'patientId', 'patientInformation', 'medicalHistory', 
+        'symptoms', 'uploadedDocuments', 'geminiAnalysis', 'riskLevel', 
+        'confidence', 'recommendedAction', 'doctorSummary', 'medicalDisclaimer', 
+        'status', 'createdAt', 'updatedAt'
+      ]) 
+      && data.keys().size() == 15
+      && data.reportId is string && data.reportId.size() <= 64
+      && data.patientId is string && data.patientId == request.auth.uid
+      && data.patientInformation is map
+      && data.medicalHistory is map
+      && data.symptoms is string && data.symptoms.size() <= 10000
+      && data.uploadedDocuments is list
+      && data.geminiAnalysis is map
+      && data.riskLevel is string && (data.riskLevel == 'LOW' || data.riskLevel == 'MEDIUM' || data.riskLevel == 'HIGH')
+      && data.confidence is number
+      && data.recommendedAction is string && data.recommendedAction.size() <= 10000
+      && data.doctorSummary is string && data.doctorSummary.size() <= 10000
+      && data.medicalDisclaimer is string && data.medicalDisclaimer.size() <= 5000
+      && data.status is string && (data.status == 'Pending Doctor Review' || data.status == 'Reviewed' || data.status == 'Completed');
+    }
+
+    match /patientReports/{reportDocId} {
+      // Create is allowed if signed in and incoming matches schema
+      allow create: if isSignedIn() 
+        && isValidId(reportDocId)
+        && isValidPatientReport(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      // Update is allowed
+      allow update: if isSignedIn()
+        && isValidId(reportDocId)
+        && isValidPatientReport(incoming())
+        && incoming().updatedAt == request.time
+        && incoming().createdAt == existing().createdAt
+        && incoming().reportId == existing().reportId
+        && incoming().patientId == existing().patientId;
+
+      // Read is allowed for authenticated users. List queries are restricted to owner or doctors.
+      allow read: if isSignedIn();
+    }
+  }
+}

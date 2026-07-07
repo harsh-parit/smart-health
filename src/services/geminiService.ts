@@ -269,3 +269,139 @@ export async function analyzeSymptoms(request: SymptomAnalysisRequest): Promise<
     throw new Error(`Gemini AI Service Error: ${errorMessage}`);
   }
 }
+
+/**
+ * Structured SOAP response returned by the documentation assistant.
+ */
+export interface SOAPNotesResponse {
+  subjective: string;
+  objective: string;
+  assessment: string;
+  plan: string;
+}
+
+const soapResponseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    subjective: {
+      type: Type.STRING,
+      description: "Subjective section: Includes chief complaints, history of present illness (HPI), past medical history, medications, allergies, and social history.",
+    },
+    objective: {
+      type: Type.STRING,
+      description: "Objective section: Records vital signs (BP, Temp, Pulse, Weight, SpO2) and summarizes the clinical observations or physical examination findings.",
+    },
+    assessment: {
+      type: Type.STRING,
+      description: "Assessment section: Triage analysis, physiological system concerns, or differential differential categories. MUST NOT give a definitive diagnosis.",
+    },
+    plan: {
+      type: Type.STRING,
+      description: "Plan section: Diagnostic recommendations, non-pharmacological care advice, follow-up instructions, and emergency warnings. MUST NOT prescribe specific medicines.",
+    },
+  },
+  required: ["subjective", "objective", "assessment", "plan"],
+};
+
+const SOAP_PROMPT_TEMPLATE = (request: any): string => {
+  return `You are a clinical documentation assistant. Generate a highly professional SOAP note (Subjective, Objective, Assessment, Plan) based on the following patient clinical information:
+
+PATIENT INFORMATION:
+- Name: ${request.patientInformation.fullName}
+- Age: ${request.patientInformation.age}
+- Gender: ${request.patientInformation.gender}
+- Location: Village: ${request.patientInformation.village}, District: ${request.patientInformation.district}
+
+SYMPTOMS / INTAKE COMPLAINT:
+${request.symptoms.map((s: string) => `- ${s}`).join('\n')}
+
+MEDICAL HISTORY:
+- Chronic Diseases: ${request.medicalHistory.chronicDiseases?.join(', ') || 'None reported'}
+- Current Medications: ${request.medicalHistory.medications?.join(', ') || 'None reported'}
+- Allergies: ${request.medicalHistory.allergies?.join(', ') || 'None reported'}
+
+VITALS ENTERED:
+- Blood Pressure: ${request.vitals.bpSystolic}/${request.vitals.bpDiastolic} mmHg
+- Temperature: ${request.vitals.temperature} °F
+- Pulse: ${request.vitals.pulse} BPM
+- Weight: ${request.vitals.weight} kg
+- Oxygen Saturation (SpO2): ${request.vitals.oxygenSaturation} %
+
+CLINICAL OBSERVATIONS:
+"${request.clinicalObservations || 'None provided.'}"
+
+CRITICAL CLINICAL & SAFETY CONSTRAINTS:
+1. You are assisting with CLINICAL DOCUMENTATION ONLY.
+2. DO NOT make a definitive diagnosis. Frame the "Assessment" as general physiological concerns, differential categories, or systems affected (e.g. 'Cardiovascular / Hypertension concern' or 'Pregnancy-related symptoms to monitor').
+3. DO NOT prescribe specific medications, dosages, or drug instructions. Focus on general therapeutics, non-pharmacological advice, education, follow-up, and red-flag emergency symptoms in the "Plan".
+4. Ensure the output is concise, structured, professional, and useful for medical professionals.`;
+};
+
+/**
+ * Generates SOAP Notes based on patient info, symptoms, vitals, history, and observations.
+ */
+export async function generateSOAPNotes(request: {
+  patientInformation: PatientInformation;
+  symptoms: string[];
+  medicalHistory: MedicalHistory;
+  vitals: {
+    bpSystolic: number;
+    bpDiastolic: number;
+    pulse: number;
+    temperature: number;
+    weight: number;
+    oxygenSaturation: number;
+  };
+  clinicalObservations: string;
+}): Promise<SOAPNotesResponse> {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new Error(
+      "Gemini API key is not configured. Please define the VITE_GEMINI_API_KEY environment variable in your .env or configure GEMINI_API_KEY in AI Studio Secrets."
+    );
+  }
+
+  const ai = new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      },
+    },
+  });
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.5-flash',
+      contents: SOAP_PROMPT_TEMPLATE(request),
+      config: {
+        systemInstruction: "You are an expert clinical scribe. Format documentation neatly in standard medical format. Adhere strictly to the safety guidelines.",
+        responseMimeType: 'application/json',
+        responseSchema: soapResponseSchema,
+        temperature: 0.2,
+      },
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response || !response.text) {
+      throw new Error("Received empty response from the Gemini AI model.");
+    }
+
+    try {
+      return JSON.parse(response.text.trim()) as SOAPNotesResponse;
+    } catch (parseError: any) {
+      throw new Error(`Failed to parse AI response into a valid SOAPNotesResponse: ${parseError.message}`);
+    }
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error("The request to the Gemini API timed out after 15 seconds. Please try again.");
+    }
+    throw new Error(`Gemini SOAP Note Generation Error: ${error.message || String(error)}`);
+  }
+}
+

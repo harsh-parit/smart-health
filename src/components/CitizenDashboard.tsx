@@ -29,8 +29,15 @@ import {
   ChevronRight,
   Clock,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Download,
+  Share2 as Share,
+  Save
 } from 'lucide-react';
+import { auth } from '../lib/firebase';
+import { analyzeSymptoms } from '../services/geminiService';
+import type { SymptomAnalysisResponse } from '../services/geminiService';
+import { generateNextReportId, savePatientReport } from '../services/reportService';
 
 interface CitizenDashboardProps {
   onBackToRoles: () => void;
@@ -114,6 +121,184 @@ export default function CitizenDashboard({ onBackToRoles, onLogout }: CitizenDas
   ]);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
 
+  // Gemini AI Symptom Triage Integration States
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiReport, setAiReport] = useState<SymptomAnalysisResponse | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [showReportPage, setShowReportPage] = useState(false);
+
+  // Firestore Save Report States
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [savedReportInfo, setSavedReportInfo] = useState<{ reportId: string; submissionTime: string; status: string } | null>(null);
+
+  const handleSaveReport = async () => {
+    if (!aiReport) return;
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      // Step 1: Generate a unique sequential Report ID
+      const nextReportId = await generateNextReportId();
+      const patientId = auth.currentUser?.uid || 'guest-patient';
+
+      // Construct file/document payload if file exists
+      const docPayload = selectedFile ? [{
+        name: selectedFile.name,
+        type: selectedFile.type || 'Document',
+        size: (selectedFile.size / (1024 * 1024)).toFixed(2) + ' MB',
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      }] : [];
+
+      const reportPayload = {
+        reportId: nextReportId,
+        patientId,
+        patientInformation: {
+          fullName: "Harsh Parit",
+          age: 29,
+          gender: "Male",
+          village: "Sector 3",
+          district: "Rural Outpost"
+        },
+        medicalHistory: {
+          chronicDiseases: [],
+          medications: [],
+          allergies: []
+        },
+        symptoms,
+        uploadedDocuments: docPayload,
+        geminiAnalysis: aiReport,
+        riskLevel: aiReport.riskLevel,
+        confidence: aiReport.confidence,
+        recommendedAction: aiReport.recommendedAction,
+        doctorSummary: aiReport.doctorSummary,
+        medicalDisclaimer: aiReport.medicalDisclaimer,
+        status: 'Pending Doctor Review' as const
+      };
+
+      // Step 2: Save the report inside Firestore under patientReports collection
+      await savePatientReport(reportPayload);
+
+      // Successfully saved! Let's update submissions to include this new saved report so they see it in their dashboard.
+      const localRecord = {
+        id: nextReportId,
+        symptoms,
+        duration,
+        severity,
+        bodyArea: bodyArea || 'General',
+        additionalNotes: additionalNotes || 'None',
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        status: 'Pending',
+        doctorNotes: 'Awaiting clinical review from the community health team. An ASHA worker will verify your vitals shortly.',
+        patientSummary: 'Male, 29 Years • Sector 3 Rural Outpost',
+        documents: docPayload,
+        timeline: [
+          { label: 'Symptom Report Submitted', date: 'Today', time: 'Just now', active: true, desc: 'Citizen registered symptoms online' },
+          { label: 'AI Symptom Triage Completed', date: 'Today', time: 'Just now', active: true, desc: 'Gemini AI generated clinical handoff report' },
+          { label: 'Awaiting District Medical Officer Review', date: 'Pending', time: '', active: false, desc: 'Assigned to Sector 3 Medical Hub for validation' }
+        ],
+        aiReport
+      };
+
+      setSubmissions(prev => [localRecord, ...prev]);
+
+      // Set saved info for displaying the success screen
+      setSavedReportInfo({
+        reportId: nextReportId,
+        submissionTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        status: 'Pending Doctor Review'
+      });
+    } catch (err: any) {
+      console.error("Firestore Save Error:", err);
+      setSaveError(err.message || "We encountered an issue saving your health assessment report. Please click 'Save Report' again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const runSymptomAnalysis = async () => {
+    // Step 1: Validate all required fields
+    const newErrors: { symptoms?: string; duration?: string; severity?: string } = {};
+    if (!symptoms.trim()) {
+      newErrors.symptoms = 'Symptoms description is required.';
+    }
+    if (!duration) {
+      newErrors.duration = 'Please select the duration.';
+    }
+    if (!severity) {
+      newErrors.severity = 'Please select a severity level.';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
+    setIsAnalyzing(true);
+    setAnalysisError(null);
+    setAiReport(null);
+
+    try {
+      // Step 2 & 3: Call analyzeSymptoms()
+      const requestData = {
+        patientInformation: {
+          fullName: "Harsh Parit",
+          age: 29,
+          gender: "Male",
+          village: "Sector 3",
+          district: "Rural Outpost"
+        },
+        symptoms: [
+          symptoms,
+          `Duration: ${duration}`,
+          bodyArea ? `Body Area: ${bodyArea}` : "",
+          additionalNotes ? `Additional Notes: ${additionalNotes}` : ""
+        ].filter(Boolean),
+        medicalHistory: {
+          chronicDiseases: [],
+          medications: [],
+          allergies: []
+        }
+      };
+
+      const result = await analyzeSymptoms(requestData);
+      
+      setAiReport(result);
+      setShowReportPage(true);
+
+      // Save to recent submissions so it's listed in the portal
+      const newRecord = {
+        id: `RP-${Math.floor(1000 + Math.random() * 9000)}`,
+        symptoms,
+        duration,
+        severity,
+        bodyArea: bodyArea || 'General',
+        additionalNotes: additionalNotes || 'None',
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        status: 'Reviewed',
+        doctorNotes: result.doctorSummary,
+        patientSummary: 'Male, 29 Years • Sector 3 Rural Outpost',
+        documents: selectedFile ? [{ name: selectedFile.name, type: selectedFile.type || 'Document', size: (selectedFile.size / (1024 * 1024)).toFixed(2) + ' MB', date: 'Today' }] : [],
+        timeline: [
+          { label: 'Symptom Report Submitted', date: 'Today', time: 'Just now', active: true, desc: 'Citizen registered symptoms online' },
+          { label: 'AI Symptom Triage Completed', date: 'Today', time: 'Just now', active: true, desc: 'Gemini AI generated clinical handoff report' },
+          { label: 'Awaiting District Medical Officer Review', date: 'Pending', time: '', active: false, desc: 'Assigned to Sector 3 Medical Hub for validation' }
+        ],
+        aiReport: result
+      };
+
+      setSubmissions(prev => [newRecord, ...prev]);
+    } catch (err: any) {
+      console.error("AI Analysis failed:", err);
+      setAnalysisError(err.message || "We couldn't analyze your symptoms right now.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   // Search, filter, and selected report views
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOption, setFilterOption] = useState<'Newest' | 'Oldest' | 'High' | 'Medium' | 'Low'>('Newest');
@@ -191,6 +376,436 @@ export default function CitizenDashboard({ onBackToRoles, onLogout }: CitizenDas
     setSubmissions([newRecord, ...submissions]);
     setShowSuccessScreen(true);
   };
+
+  if (isAnalyzing) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        {/* Decorative soft glowing elements to make it beautiful */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-100/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-100/20 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-md w-full bg-white border border-slate-100 shadow-xl rounded-[2.5rem] p-8 text-center space-y-8 relative z-10">
+          {/* Animated Spinner with Progress Circle */}
+          <div className="relative w-24 h-24 mx-auto">
+            {/* Outer spinning dash-ring */}
+            <div className="absolute inset-0 border-4 border-slate-100 rounded-full" />
+            <div className="absolute inset-0 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            {/* Pulsating heart / medical icon inside */}
+            <div className="absolute inset-2 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
+              <Activity className="w-8 h-8 text-blue-600 animate-pulse" />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h2 className="text-xl font-display font-extrabold text-slate-900 tracking-tight">
+              Analyzing your health information...
+            </h2>
+            <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto font-medium">
+              Our secure clinical triage engine is assessing your symptoms, estimating priority, and preparing a medical handoff report for your healthcare team.
+            </p>
+          </div>
+
+          {/* Progress bar simulation for realistic visual pacing */}
+          <div className="space-y-1.5">
+            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: "0%" }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 12, ease: "easeInOut" }}
+                className="bg-blue-600 h-full rounded-full"
+              />
+            </div>
+            <span className="text-[10px] font-mono font-bold text-slate-400 tracking-wider uppercase animate-pulse">
+              Clinical Assessment in Progress
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (analysisError) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-rose-50/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="max-w-md w-full bg-white border border-slate-100 shadow-xl rounded-[2.5rem] p-8 text-center space-y-6 relative z-10">
+          <div className="w-16 h-16 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mx-auto text-rose-600 shadow-xs">
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-display font-extrabold text-slate-950 tracking-tight">
+              We couldn't analyze your symptoms right now.
+            </h2>
+            <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto font-medium">
+              {analysisError}
+            </p>
+          </div>
+
+          <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 text-left text-[11px] text-slate-400 font-mono">
+            <span className="font-bold text-slate-500 block mb-1">SYSTEM REPORT LOG:</span>
+            <span>Error Status: TRIAGE_API_FAIL | Connection Timeout or Key Configuration Mismatch</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button
+              type="button"
+              onClick={runSymptomAnalysis}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl text-xs hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAnalysisError(null);
+                setIsReportingSymptoms(false);
+              }}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/60 font-semibold py-3 px-4 rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span>Return Home</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (savedReportInfo) {
+    return (
+      <div className="min-h-screen bg-slate-50/50 flex flex-col justify-between pb-24 relative overflow-hidden">
+        {/* Decorative background gradients */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-100/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-md w-full mx-auto px-6 py-12 flex-1 flex flex-col justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white border border-slate-100 shadow-xl rounded-[2.5rem] p-8 text-center space-y-8 relative z-10"
+          >
+            {/* Success Icon Animation */}
+            <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+              <CheckCircle2 className="w-8 h-8 animate-bounce" />
+            </div>
+
+            <div className="space-y-2">
+              <h1 className="text-2xl font-display font-extrabold text-slate-900 tracking-tight">
+                Health Report Successfully Submitted
+              </h1>
+              <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                Your symptom assessment and triage report have been securely saved and synchronized to the clinical Firestore database.
+              </p>
+            </div>
+
+            {/* Structured Report Metadata Display */}
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-3.5 text-left text-xs font-semibold">
+              <div className="flex justify-between items-center py-1.5 border-b border-slate-200/50">
+                <span className="text-slate-400">Report ID</span>
+                <span className="font-mono text-slate-800 font-bold bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md border border-blue-100/50">
+                  {savedReportInfo.reportId}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-1.5 border-b border-slate-200/50">
+                <span className="text-slate-400">Submission Time</span>
+                <span className="text-slate-700 font-semibold">{savedReportInfo.submissionTime}</span>
+              </div>
+              <div className="flex justify-between items-center py-1.5">
+                <span className="text-slate-400">Current Status</span>
+                <span className="px-2.5 py-1 text-[10px] font-bold font-mono uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200 rounded-md">
+                  {savedReportInfo.status}
+                </span>
+              </div>
+            </div>
+
+            {/* CTA Actions */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  // Return Home: reset states and go to home tab
+                  setSavedReportInfo(null);
+                  setShowReportPage(false);
+                  setIsReportingSymptoms(false);
+                  setSymptoms('');
+                  setDuration('');
+                  setSeverity('');
+                  setBodyArea('');
+                  setAdditionalNotes('');
+                  setActiveTab('home');
+                }}
+                className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold py-3 px-4 rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+              >
+                <Home className="w-3.5 h-3.5 text-slate-500" />
+                <span>Return Home</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  // View My Reports: reset states and go to reports tab
+                  setSavedReportInfo(null);
+                  setShowReportPage(false);
+                  setIsReportingSymptoms(false);
+                  setSymptoms('');
+                  setDuration('');
+                  setSeverity('');
+                  setBodyArea('');
+                  setAdditionalNotes('');
+                  setActiveTab('reports');
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>View My Reports</span>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showReportPage && aiReport) {
+    const riskColor = aiReport.riskLevel === 'HIGH' 
+      ? 'text-rose-700 bg-rose-50 border-rose-200' 
+      : aiReport.riskLevel === 'MEDIUM' 
+        ? 'text-amber-700 bg-amber-50 border-amber-200' 
+        : 'text-emerald-700 bg-emerald-50 border-emerald-200';
+
+    const riskBadge = aiReport.riskLevel === 'HIGH' ? 'bg-rose-500' : aiReport.riskLevel === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500';
+
+    return (
+      <div className="min-h-screen bg-slate-50/50 flex flex-col justify-between pb-24 relative overflow-hidden">
+        {/* Background ambient decorative orbs */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-100/10 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Header */}
+        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
+          <div className="max-w-2xl mx-auto flex items-center justify-between">
+            <button
+              onClick={() => {
+                setShowReportPage(false);
+                setIsReportingSymptoms(false);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all border border-slate-100/80 shadow-xs cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Dashboard</span>
+            </button>
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold">
+              AI CLINICAL REPORT
+            </span>
+          </div>
+        </header>
+
+        {/* Report Content */}
+        <main className="max-w-2xl mx-auto w-full px-6 py-8 flex-1 space-y-6 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            {/* Title & Introduction */}
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-100/40 text-[10px] font-mono font-bold uppercase tracking-wider">
+                <Activity className="w-3 h-3 animate-pulse" />
+                Triage Assessment Complete
+              </div>
+              <h1 className="text-3xl font-display font-extrabold text-slate-950 tracking-tight">
+                Health Assessment Report
+              </h1>
+              <p className="text-xs text-slate-400 max-w-md mx-auto font-medium">
+                This report represents an automated triage assessment prepared using generative artificial intelligence to guide physical consultation.
+              </p>
+            </div>
+
+            {/* Core Card */}
+            <div className="bg-white border border-slate-100 shadow-lg rounded-[2.5rem] p-6 sm:p-8 space-y-6">
+              
+              {/* Triage Overview Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-6 border-b border-slate-100">
+                {/* Risk Level */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100/80 flex flex-col justify-between space-y-2">
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Risk Level / Urgency</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-3 h-3 rounded-full ${riskBadge} animate-pulse`} />
+                    <span className={`px-2.5 py-1 text-xs font-bold font-mono uppercase tracking-wide rounded-md border ${riskColor}`}>
+                      {aiReport.riskLevel} RISK
+                    </span>
+                  </div>
+                </div>
+
+                {/* Confidence Score */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100/80 flex flex-col justify-between space-y-2">
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Confidence Score</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl font-extrabold text-slate-800 tracking-tight">{aiReport.confidence}%</span>
+                    <div className="flex-1 bg-slate-200 h-2 rounded-full overflow-hidden">
+                      <div className="bg-blue-600 h-full rounded-full" style={{ width: `${aiReport.confidence}%` }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Patient Summary Section */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Patient Summary</h3>
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100/80 text-xs font-semibold text-slate-700 leading-relaxed">
+                  {aiReport.patientSummary}
+                </div>
+              </div>
+
+              {/* Detected Symptoms Section */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Detected Symptoms</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {aiReport.detectedSymptoms.map((symptom, index) => (
+                    <span 
+                      key={index}
+                      className="px-3 py-1.5 text-xs font-bold bg-blue-50/50 text-blue-700 border border-blue-100/60 rounded-xl flex items-center gap-1"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      {symptom}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Possible Health Concerns Section */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Possible Health Concerns</h3>
+                <div className="space-y-2">
+                  {aiReport.possibleHealthConcerns.map((concern, index) => (
+                    <div 
+                      key={index} 
+                      className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs font-semibold text-slate-700 leading-relaxed"
+                    >
+                      <AlertCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                      <span>{concern}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recommended Next Steps Section */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Recommended Next Steps</h3>
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100/80 text-xs text-slate-700 leading-relaxed font-semibold">
+                  {aiReport.recommendedAction}
+                </div>
+              </div>
+
+              {/* Doctor Handoff Summary Section */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">Doctor Handoff Summary (Clinical Synthesis)</h3>
+                <div className="p-4 rounded-2xl bg-indigo-50/20 border border-indigo-100/40 text-xs text-slate-800 leading-relaxed font-semibold italic">
+                  {aiReport.doctorSummary}
+                </div>
+              </div>
+
+              {/* Medical Disclaimer Section */}
+              <div className="p-4 rounded-2xl bg-amber-50/30 border border-amber-100/60 text-[10px] text-amber-800 leading-relaxed font-semibold space-y-1">
+                <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-amber-900">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  Medical Disclaimer
+                </div>
+                <p>{aiReport.medicalDisclaimer}</p>
+              </div>
+
+            </div>
+
+            {/* Actions Grid */}
+            {saveError && (
+              <div className="mb-4 p-4 rounded-2xl bg-rose-50 border border-rose-100 text-xs text-rose-700 font-semibold flex items-start gap-2.5 leading-relaxed shadow-xs">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500 animate-pulse" />
+                <div className="space-y-1 text-left">
+                  <p className="font-bold text-rose-800">Saving Failed</p>
+                  <p>{saveError}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  window.print();
+                }}
+                className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold py-3 px-2 rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-500" />
+                <span>Download PDF</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: 'My AI Triage Report',
+                      text: aiReport.patientSummary,
+                    }).catch(console.error);
+                  } else {
+                    alert("Copyable Share Link: " + window.location.href);
+                  }
+                }}
+                className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold py-3 px-2 rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+              >
+                <Share className="w-3.5 h-3.5 text-slate-500" />
+                <span>Share Report</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={handleSaveReport}
+                className={`font-bold py-3 px-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
+                  isSaving
+                    ? 'bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
+                }`}
+              >
+                {isSaving ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Report</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReportPage(false);
+                  setIsReportingSymptoms(false);
+                  // Reset form fields
+                  setSymptoms('');
+                  setDuration('');
+                  setSeverity('');
+                  setBodyArea('');
+                  setAdditionalNotes('');
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-2 rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <Home className="w-3.5 h-3.5" />
+                <span>Return Home</span>
+              </button>
+            </div>
+          </motion.div>
+        </main>
+      </div>
+    );
+  }
 
   if (isReportingSymptoms) {
     return (
@@ -314,7 +929,7 @@ export default function CitizenDashboard({ onBackToRoles, onLogout }: CitizenDas
                 </p>
               </div>
 
-              <form onSubmit={handleContinue} className="bg-white border border-slate-100 shadow-lg rounded-[2.5rem] p-6 sm:p-8 space-y-6">
+              <form onSubmit={(e) => { e.preventDefault(); runSymptomAnalysis(); }} className="bg-white border border-slate-100 shadow-lg rounded-[2.5rem] p-6 sm:p-8 space-y-6">
                 
                 {/* Symptoms Description */}
                 <div>
@@ -490,7 +1105,7 @@ export default function CitizenDashboard({ onBackToRoles, onLogout }: CitizenDas
                     type="submit"
                     className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl text-xs hover:shadow-lg hover:shadow-blue-500/10 active:scale-98 transition-all cursor-pointer"
                   >
-                    Continue
+                    Analyze Symptoms
                   </button>
                 </div>
 
@@ -1217,7 +1832,7 @@ export default function CitizenDashboard({ onBackToRoles, onLogout }: CitizenDas
                       )}
                     </div>
 
-                    {/* Doctor Notes */}
+                     {/* Doctor Notes */}
                     <div className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-xs space-y-4">
                       <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
                         <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
@@ -1229,6 +1844,71 @@ export default function CitizenDashboard({ onBackToRoles, onLogout }: CitizenDas
                         {report.doctorNotes || 'No physician evaluation records have been submitted for this intake. A District Health Officer will provide notes following triage validation.'}
                       </div>
                     </div>
+
+                    {/* AI Assessment Report inside details view if available */}
+                    {report.aiReport && (
+                      <div className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm space-y-4">
+                        <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
+                          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                            <Activity className="w-4 h-4 animate-pulse" />
+                          </div>
+                          <h3 className="font-display font-extrabold text-slate-900 text-sm">AI Clinical Assessment</h3>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                              <span className="text-[9px] font-mono text-slate-400 block uppercase font-bold">AI Risk Urgency</span>
+                              <span className={`text-xs font-bold uppercase tracking-wider mt-1 inline-block ${
+                                report.aiReport.riskLevel === 'HIGH' ? 'text-rose-600' :
+                                report.aiReport.riskLevel === 'MEDIUM' ? 'text-amber-600' :
+                                'text-emerald-600'
+                              }`}>
+                                {report.aiReport.riskLevel}
+                              </span>
+                            </div>
+                            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                              <span className="text-[9px] font-mono text-slate-400 block uppercase font-bold">Confidence</span>
+                              <span className="text-xs font-bold text-slate-700 mt-1 block">{report.aiReport.confidence}%</span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="text-[9px] font-mono text-slate-400 uppercase font-bold block">Patient Summary</span>
+                            <p className="text-xs text-slate-700 font-semibold">{report.aiReport.patientSummary}</p>
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="text-[9px] font-mono text-slate-400 uppercase font-bold block">Detected Symptoms</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {report.aiReport.detectedSymptoms.map((s: string, idx: number) => (
+                                <span key={idx} className="px-2 py-1 text-[10px] font-bold bg-blue-50 text-blue-700 rounded-lg">
+                                  {s}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="text-[9px] font-mono text-slate-400 uppercase font-bold block">Possible Health Concerns</span>
+                            <ul className="list-disc pl-4 text-xs text-slate-600 font-medium space-y-1">
+                              {report.aiReport.possibleHealthConcerns.map((c: string, idx: number) => (
+                                <li key={idx}>{c}</li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="text-[9px] font-mono text-slate-400 uppercase font-bold block">Recommended Next Steps</span>
+                            <p className="text-xs text-slate-700 font-semibold leading-relaxed">{report.aiReport.recommendedAction}</p>
+                          </div>
+
+                          <div className="space-y-1">
+                            <span className="text-[9px] font-mono text-slate-400 uppercase font-bold block">Clinical Triage Summary (For Doctor)</span>
+                            <p className="text-xs text-slate-700 bg-indigo-50/20 border border-indigo-100/30 rounded-xl p-3 leading-relaxed italic font-semibold">{report.aiReport.doctorSummary}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Report timeline */}
                     <div className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-xs space-y-4">

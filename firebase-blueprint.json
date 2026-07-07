@@ -1,0 +1,92 @@
+{
+  "entities": {
+    "patientReport": {
+      "title": "patientReport",
+      "description": "A clinical symptom report submitted by a citizen, analyzed by Gemini AI, and pending doctor review.",
+      "type": "object",
+      "properties": {
+        "reportId": {
+          "type": "string",
+          "description": "Unique auto-incremented report ID in format SHAI-2026-XXXXXX"
+        },
+        "patientId": {
+          "type": "string",
+          "description": "The UID of the patient"
+        },
+        "patientInformation": {
+          "type": "object",
+          "description": "The demographic and location details of the patient"
+        },
+        "medicalHistory": {
+          "type": "object",
+          "description": "Chronic diseases, medications, and allergies of the patient"
+        },
+        "symptoms": {
+          "type": "string",
+          "description": "The description of symptoms reported by the patient"
+        },
+        "uploadedDocuments": {
+          "type": "array",
+          "description": "List of metadata of uploaded documents"
+        },
+        "geminiAnalysis": {
+          "type": "object",
+          "description": "Full structured response from Gemini AI clinical triage"
+        },
+        "riskLevel": {
+          "type": "string",
+          "enum": ["LOW", "MEDIUM", "HIGH"]
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "recommendedAction": {
+          "type": "string"
+        },
+        "doctorSummary": {
+          "type": "string"
+        },
+        "medicalDisclaimer": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Pending Doctor Review", "Reviewed", "Completed"]
+        },
+        "createdAt": {
+          "type": "object",
+          "description": "Firestore Timestamp when report was created"
+        },
+        "updatedAt": {
+          "type": "object",
+          "description": "Firestore Timestamp when report was updated"
+        }
+      },
+      "required": [
+        "reportId",
+        "patientId",
+        "patientInformation",
+        "medicalHistory",
+        "symptoms",
+        "uploadedDocuments",
+        "geminiAnalysis",
+        "riskLevel",
+        "confidence",
+        "recommendedAction",
+        "doctorSummary",
+        "medicalDisclaimer",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "patientReports": {
+      "schema": {
+        "$ref": "entities/patientReport"
+      },
+      "description": "Collection of clinical symptom and triage reports submitted by citizens."
+    }
+  }
+}

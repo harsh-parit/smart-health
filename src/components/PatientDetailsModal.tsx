@@ -9,25 +9,57 @@ import {
   Stethoscope, 
   MapPin, 
   Users, 
-  Clock 
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  FileDown,
+  Activity,
+  ArrowLeft
 } from 'lucide-react';
-import { Patient } from './DoctorDashboard';
+import { SavedReport } from '../services/reportService';
 
 interface PatientDetailsModalProps {
-  patient: Patient | null;
+  report: SavedReport | null;
   onClose: () => void;
-  onStartConsultation?: (patient: Patient) => void;
+  onStartConsultation: (report: SavedReport) => void;
+  onRejectReport: (report: SavedReport) => void;
+  isRejecting?: boolean;
 }
 
 export default function PatientDetailsModal({
-  patient,
+  report,
   onClose,
-  onStartConsultation
+  onStartConsultation,
+  onRejectReport,
+  isRejecting = false
 }: PatientDetailsModalProps) {
-  if (!patient) return null;
+  if (!report) return null;
 
-  const isHigh = patient.riskLevel === 'High Risk';
-  const isMed = patient.riskLevel === 'Medium Risk';
+  const isHigh = report.riskLevel === 'HIGH' || report.geminiAnalysis?.riskLevel === 'HIGH';
+  const isMed = report.riskLevel === 'MEDIUM' || report.geminiAnalysis?.riskLevel === 'MEDIUM';
+
+  // Format submission time nicely
+  let submissionTimeStr = 'Unknown Time';
+  if (report.createdAt) {
+    try {
+      const date = report.createdAt.toDate ? report.createdAt.toDate() : new Date(report.createdAt);
+      submissionTimeStr = date.toLocaleString([], { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    } catch (e) {
+      submissionTimeStr = String(report.createdAt);
+    }
+  }
+
+  const handleRejectClick = () => {
+    if (window.confirm(`Are you sure you want to reject report ${report.reportId} for patient ${report.patientInformation?.fullName || 'Unknown'}? This action cannot be undone.`)) {
+      onRejectReport(report);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -46,17 +78,21 @@ export default function PatientDetailsModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
         transition={{ type: 'spring', duration: 0.4 }}
-        className="bg-white rounded-[2rem] border border-slate-100 shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto z-10 relative flex flex-col"
+        className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto z-10 relative flex flex-col"
       >
         {/* Header (Sticky) */}
         <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center font-display font-extrabold text-sm border border-purple-100">
-              {patient.name[0]}
+            <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-700 flex items-center justify-center font-display font-extrabold text-sm border border-purple-100">
+              {(report.patientInformation?.fullName || 'P')[0]}
             </div>
             <div>
-              <h3 className="font-display font-black text-slate-900 text-sm">{patient.name}</h3>
-              <p className="text-[11px] text-slate-400">Patient ID: {patient.id} • Checked In Today</p>
+              <h3 className="font-display font-black text-slate-900 text-sm">
+                {report.patientInformation?.fullName || 'Unknown Patient'}
+              </h3>
+              <p className="text-[11px] text-slate-400 font-medium">
+                Report ID: <span className="font-mono text-slate-600 font-bold">{report.reportId}</span> • Submitted: {submissionTimeStr}
+              </p>
             </div>
           </div>
           
@@ -69,265 +105,290 @@ export default function PatientDetailsModal({
         </div>
 
         {/* Scrollable Body Content */}
-        <div className="p-6 space-y-6">
-          {/* Quick Stats Banner */}
-          <div className="grid grid-cols-3 gap-4 p-4 rounded-2xl bg-slate-50/70 border border-slate-100/50 text-center">
-            <div>
-              <span className="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider block">Age</span>
-              <span className="text-xs font-bold text-slate-800 mt-0.5 block">{patient.age} Years</span>
-            </div>
-            <div>
-              <span className="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider block">Gender</span>
-              <span className="text-xs font-bold text-slate-800 mt-0.5 block">{patient.gender}</span>
-            </div>
-            <div>
-              <span className="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider block">Village</span>
-              <span className="text-xs font-bold text-slate-800 mt-0.5 block truncate">{patient.village}</span>
-            </div>
-          </div>
-
-          {/* Core Reported Symptoms */}
+        <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+          
+          {/* 1. Patient Information (Quick Demographics) */}
           <div className="space-y-3">
             <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-              <AlertTriangle className="w-3.5 h-3.5 text-slate-400" />
-              <span>Reported Symptoms & Notes</span>
+              <Users className="w-3.5 h-3.5 text-slate-400" />
+              <span>Patient Information</span>
             </h4>
-            <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100 space-y-3">
-              <div className="flex flex-wrap gap-1.5">
-                {patient.symptoms.map((s, idx) => (
-                  <span key={idx} className="text-[11px] font-semibold bg-white border border-slate-150 text-slate-700 px-2.5 py-1 rounded-full">
-                    {s}
-                  </span>
-                ))}
-              </div>
-              <p className="text-xs text-slate-600 italic leading-relaxed pt-2 border-t border-slate-100">
-                "{patient.notes || 'No triage notes specified.'}"
-              </p>
-            </div>
-          </div>
-
-          {/* Vitals Grid with Visual Alerts */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-              <HeartPulse className="w-3.5 h-3.5 text-slate-400" />
-              <span>Triage Vitals Check</span>
-            </h4>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {/* BP Card */}
-              {(() => {
-                const isBpHigh = patient.vitals.bpSystolic >= 140 || patient.vitals.bpDiastolic >= 90;
-                return (
-                  <div className={`p-3 rounded-xl border ${isBpHigh ? 'bg-rose-50/50 border-rose-100 text-rose-950' : 'bg-white border-slate-100'}`}>
-                    <span className="text-[9px] font-mono text-slate-400 block">Blood Pressure</span>
-                    <strong className={`text-xs font-extrabold mt-0.5 block ${isBpHigh ? 'text-rose-700' : 'text-slate-800'}`}>
-                      {patient.vitals.bpSystolic}/{patient.vitals.bpDiastolic} mmHg
-                    </strong>
-                    <span className={`text-[8px] font-bold px-1 py-0.2 rounded mt-1.5 inline-block ${isBpHigh ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {isBpHigh ? 'High Alert' : 'Normal'}
-                    </span>
-                  </div>
-                );
-              })()}
-
-              {/* Blood Sugar Card */}
-              {(() => {
-                const isSugarHigh = patient.vitals.bloodSugar >= 140;
-                return (
-                  <div className={`p-3 rounded-xl border ${isSugarHigh ? 'bg-amber-50/50 border-amber-100 text-amber-950' : 'bg-white border-slate-100'}`}>
-                    <span className="text-[9px] font-mono text-slate-400 block">Blood Sugar</span>
-                    <strong className={`text-xs font-extrabold mt-0.5 block ${isSugarHigh ? 'text-amber-700' : 'text-slate-800'}`}>
-                      {patient.vitals.bloodSugar} mg/dL
-                    </strong>
-                    <span className={`text-[8px] font-bold px-1 py-0.2 rounded mt-1.5 inline-block ${isSugarHigh ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {isSugarHigh ? 'High Alert' : 'Normal'}
-                    </span>
-                  </div>
-                );
-              })()}
-
-              {/* Temperature Card */}
-              {(() => {
-                const isFever = patient.vitals.temperature >= 100.0;
-                return (
-                  <div className={`p-3 rounded-xl border ${isFever ? 'bg-rose-50/50 border-rose-100 text-rose-950' : 'bg-white border-slate-100'}`}>
-                    <span className="text-[9px] font-mono text-slate-400 block">Temperature</span>
-                    <strong className={`text-xs font-extrabold mt-0.5 block ${isFever ? 'text-rose-700' : 'text-slate-800'}`}>
-                      {patient.vitals.temperature}°F
-                    </strong>
-                    <span className={`text-[8px] font-bold px-1 py-0.2 rounded mt-1.5 inline-block ${isFever ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
-                      {isFever ? 'Fever' : 'Normal'}
-                    </span>
-                  </div>
-                );
-              })()}
-
-              {/* Pulse Card */}
-              <div className="p-3 bg-white border border-slate-100 rounded-xl">
-                <span className="text-[9px] font-mono text-slate-400 block">Pulse Rate</span>
-                <strong className="text-xs font-extrabold text-slate-800 mt-0.5 block">
-                  {patient.vitals.pulse} BPM
-                </strong>
-                <span className="text-[8px] font-bold px-1 py-0.2 rounded bg-slate-100 text-slate-500 mt-1.5 inline-block">
-                  Normal
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-100 text-left">
+              <div>
+                <span className="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider block">Full Name</span>
+                <span className="text-xs font-bold text-slate-800 mt-0.5 block">
+                  {report.patientInformation?.fullName || 'N/A'}
                 </span>
               </div>
-
-              {/* Weight Card */}
-              <div className="p-3 bg-white border border-slate-100 rounded-xl">
-                <span className="text-[9px] font-mono text-slate-400 block">Body Weight</span>
-                <strong className="text-xs font-extrabold text-slate-800 mt-0.5 block">
-                  {patient.vitals.weight} kg
-                </strong>
-                <span className="text-[8px] font-bold px-1 py-0.2 rounded bg-slate-100 text-slate-500 mt-1.5 inline-block">
-                  Recorded
+              <div>
+                <span className="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider block">Age & Gender</span>
+                <span className="text-xs font-bold text-slate-800 mt-0.5 block">
+                  {report.patientInformation?.age || 'Unknown'} Y / {report.patientInformation?.gender || 'N/A'}
                 </span>
               </div>
-
-              {/* Risk Level Badge Card */}
-              <div className="p-3 bg-white border border-slate-100 rounded-xl">
-                <span className="text-[9px] font-mono text-slate-400 block">Risk Priority</span>
-                <strong className={`text-xs font-extrabold mt-0.5 block ${isHigh ? 'text-rose-600' : isMed ? 'text-amber-600' : 'text-emerald-600'}`}>
-                  {patient.riskLevel}
-                </strong>
-                <span className={`text-[8px] font-bold px-1 py-0.2 rounded mt-1.5 inline-block ${
-                  isHigh ? 'bg-rose-50 text-rose-600' : isMed ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
-                }`}>
-                  Triage Status
+              <div>
+                <span className="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider block">Village</span>
+                <span className="text-xs font-bold text-slate-800 mt-0.5 block truncate">
+                  {report.patientInformation?.village || 'N/A'}
+                </span>
+              </div>
+              <div>
+                <span className="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider block">District</span>
+                <span className="text-xs font-bold text-slate-800 mt-0.5 block truncate">
+                  {report.patientInformation?.district || 'N/A'}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Medical History */}
+          {/* 2. Medical History */}
           <div className="space-y-3">
             <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
               <Clipboard className="w-3.5 h-3.5 text-slate-400" />
               <span>Patient Medical History</span>
             </h4>
-            {patient.medicalHistory && patient.medicalHistory.length > 0 ? (
-              <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
-                <ul className="space-y-2">
-                  {patient.medicalHistory.map((hist, idx) => (
-                    <li key={idx} className="text-xs text-slate-600 flex items-center gap-2">
-                      <span className="w-1 h-1 rounded-full bg-purple-400 shrink-0" />
-                      <span>{hist}</span>
-                    </li>
-                  ))}
-                </ul>
+            <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100/80 space-y-3">
+              <div>
+                <span className="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider block">Chronic Diseases</span>
+                {report.medicalHistory?.chronicDiseases && report.medicalHistory.chronicDiseases.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {report.medicalHistory.chronicDiseases.map((d, i) => (
+                      <span key={i} className="text-[10px] font-bold bg-white border border-slate-200 text-slate-700 px-2.5 py-0.5 rounded-lg">
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-xs text-slate-500 italic mt-1 block">None declared.</span>
+                )}
+              </div>
+              
+              <div className="border-t border-slate-200/50 pt-2.5">
+                <span className="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider block">Current Medications</span>
+                {report.medicalHistory?.medications && report.medicalHistory.medications.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {report.medicalHistory.medications.map((m, i) => (
+                      <span key={i} className="text-[10px] font-bold bg-white border border-slate-200 text-slate-700 px-2.5 py-0.5 rounded-lg">
+                        {m}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-xs text-slate-500 italic mt-1 block">None declared.</span>
+                )}
+              </div>
+
+              <div className="border-t border-slate-200/50 pt-2.5">
+                <span className="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider block">Drug & Food Allergies</span>
+                {report.medicalHistory?.allergies && report.medicalHistory.allergies.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {report.medicalHistory.allergies.map((a, i) => (
+                      <span key={i} className="text-[10px] font-bold bg-rose-50 border border-rose-100 text-rose-700 px-2.5 py-0.5 rounded-lg">
+                        {a}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-xs text-slate-500 italic mt-1 block">No known drug or food allergies (NKDA).</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Symptoms (Reported raw text) */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 text-slate-400" />
+              <span>Reported Symptoms Description</span>
+            </h4>
+            <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
+              <p className="text-xs text-slate-700 leading-relaxed italic whitespace-pre-line">
+                "{report.symptoms || 'No additional symptom details provided.'}"
+              </p>
+            </div>
+          </div>
+
+          {/* 4. Uploaded Documents */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <FileText className="w-3.5 h-3.5 text-slate-400" />
+              <span>Uploaded Documents</span>
+            </h4>
+            {report.uploadedDocuments && report.uploadedDocuments.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {report.uploadedDocuments.map((doc, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-100/80 hover:bg-slate-100/50 transition-colors">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <FileText className="w-4.5 h-4.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate leading-tight">{doc.name}</p>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">{doc.size || 'Unknown size'}</p>
+                      </div>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => alert(`Downloading "${doc.name}" is simulated.`)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-750 hover:bg-slate-200/50 transition-colors"
+                    >
+                      <FileDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 italic">No historical systemic chronic conditions or allergies reported.</p>
+              <div className="p-4 bg-slate-50/50 border border-slate-100 rounded-2xl text-center text-xs text-slate-400 italic">
+                No diagnostic records, lab sheets, or photos uploaded.
+              </div>
             )}
           </div>
 
-          {/* Completed Consultation Record details */}
-          {patient.consultation ? (
-            <div className="pt-4 border-t border-slate-100 space-y-4">
-              <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                <FileText className="w-3.5 h-3.5 text-slate-400" />
-                <span>Completed Consultation Record</span>
-              </h4>
-              
-              <div className="bg-purple-50/20 border border-purple-100/40 rounded-2xl p-5 space-y-4">
-                {/* Diagnosis */}
+          {/* 5. Gemini Analysis */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <Activity className="w-3.5 h-3.5 text-slate-400" />
+              <span>Gemini Clinical Triage Analysis</span>
+            </h4>
+            <div className="bg-purple-50/20 border border-purple-100/50 rounded-2xl p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-[9px] font-mono text-purple-600 font-bold uppercase tracking-wider block">Diagnosis</span>
-                  <strong className="text-sm font-display font-extrabold text-slate-800 block mt-0.5">
-                    {patient.consultation.diagnosis}
-                  </strong>
+                  <span className="text-[9px] font-mono text-purple-600 font-bold uppercase tracking-wider block">Triage Risk Level</span>
+                  <span className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg inline-block mt-1 ${
+                    isHigh
+                      ? 'text-rose-700 bg-rose-50 border border-rose-100'
+                      : isMed
+                        ? 'text-amber-700 bg-amber-50 border border-amber-100'
+                        : 'text-emerald-700 bg-emerald-50 border border-emerald-100'
+                  }`}>
+                    {report.riskLevel || report.geminiAnalysis?.riskLevel || 'LOW'} RISK
+                  </span>
                 </div>
+                <div>
+                  <span className="text-[9px] font-mono text-purple-600 font-bold uppercase tracking-wider block">AI Confidence Score</span>
+                  <span className="text-sm font-display font-black text-slate-800 mt-1 block">
+                    {report.confidence || report.geminiAnalysis?.confidence || 0}%
+                  </span>
+                </div>
+              </div>
 
-                {/* Observations */}
-                {patient.consultation.observations && (
-                  <div>
-                    <span className="text-[9px] font-mono text-purple-600 font-bold uppercase tracking-wider block">Clinical Observations</span>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed whitespace-pre-line">
-                      {patient.consultation.observations}
-                    </p>
-                  </div>
-                )}
+              {/* Confidence Progress bar */}
+              <div className="space-y-1">
+                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200/30">
+                  <div 
+                    className="bg-purple-600 h-2 rounded-full transition-all duration-500" 
+                    style={{ width: `${report.confidence || report.geminiAnalysis?.confidence || 0}%` }} 
+                  />
+                </div>
+              </div>
 
-                {/* Prescription List */}
-                {patient.consultation.prescription && patient.consultation.prescription.length > 0 && (
-                  <div>
-                    <span className="text-[9px] font-mono text-purple-600 font-bold uppercase tracking-wider block mb-1.5">Prescribed Therapeutics</span>
-                    <div className="bg-white border border-purple-100/25 rounded-xl overflow-hidden shadow-xs">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-purple-50/50 border-b border-purple-100/25 text-[9px] font-mono text-purple-500 uppercase font-bold">
-                            <th className="px-3 py-1.5">Medicine</th>
-                            <th className="px-3 py-1.5">Dosage</th>
-                            <th className="px-3 py-1.5">Frequency</th>
-                            <th className="px-3 py-1.5">Timing</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {patient.consultation.prescription.map((m, idx) => (
-                            <tr key={idx} className="text-xs text-slate-700 font-medium">
-                              <td className="px-3 py-2 font-semibold text-slate-900">{m.name}</td>
-                              <td className="px-3 py-2">{m.dosage}</td>
-                              <td className="px-3 py-2 text-slate-600">{m.frequency}</td>
-                              <td className="px-3 py-2 text-slate-500">{m.timing}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
+              <div>
+                <span className="text-[9px] font-mono text-purple-600 font-bold uppercase tracking-wider block">Detected Symptoms</span>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {report.geminiAnalysis?.detectedSymptoms && report.geminiAnalysis.detectedSymptoms.length > 0 ? (
+                    report.geminiAnalysis.detectedSymptoms.map((s, i) => (
+                      <span key={i} className="text-[10px] font-bold bg-white border border-purple-100/30 text-purple-700 px-2.5 py-0.5 rounded-md">
+                        {s}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-400 italic">No extracted symptoms.</span>
+                  )}
+                </div>
+              </div>
 
-                {/* Advice */}
-                {patient.consultation.advice && (
-                  <div>
-                    <span className="text-[9px] font-mono text-purple-600 font-bold uppercase tracking-wider block">Clinical Advice & Warnings</span>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                      {patient.consultation.advice}
-                    </p>
-                  </div>
-                )}
+              <div>
+                <span className="text-[9px] font-mono text-purple-600 font-bold uppercase tracking-wider block">Possible Health Concerns</span>
+                <ul className="list-disc pl-4 text-xs text-slate-700 space-y-1 mt-1.5 font-medium">
+                  {report.geminiAnalysis?.possibleHealthConcerns && report.geminiAnalysis.possibleHealthConcerns.length > 0 ? (
+                    report.geminiAnalysis.possibleHealthConcerns.map((c, i) => (
+                      <li key={i}>{c}</li>
+                    ))
+                  ) : (
+                    <li>General health check recommended.</li>
+                  )}
+                </ul>
+              </div>
 
-                {/* Follow up date */}
-                {patient.consultation.followUpDate && (
-                  <div className="flex items-center gap-2 pt-2 border-t border-purple-100/20 text-xs">
-                    <span className="text-[9px] font-mono text-purple-500 uppercase font-bold">Recommended Follow-up Date:</span>
-                    <span className="font-bold text-slate-700">{patient.consultation.followUpDate}</span>
-                  </div>
-                )}
+              <div>
+                <span className="text-[9px] font-mono text-purple-600 font-bold uppercase tracking-wider block">AI Recommended Action</span>
+                <p className="text-xs text-slate-700 leading-relaxed font-medium mt-1">
+                  {report.recommendedAction || report.geminiAnalysis?.recommendedAction || 'General clinical review is recommended.'}
+                </p>
+              </div>
+
+              <div className="bg-white border border-purple-100/25 rounded-xl p-4 space-y-1">
+                <span className="text-[9px] font-mono text-purple-500 font-bold uppercase tracking-wider block">Clinical Safety Disclaimer</span>
+                <p className="text-[10px] text-slate-500 leading-relaxed font-semibold italic">
+                  "{report.medicalDisclaimer || report.geminiAnalysis?.medicalDisclaimer || 'This is an AI-powered triage analysis designed to support clinical staff. It does not replace independent professional medical judgment.'}"
+                </p>
               </div>
             </div>
-          ) : (
-            <div className="pt-4 border-t border-slate-100 text-center py-4">
-              <p className="text-xs text-slate-400 italic">No formal consultation logs or electronic medical prescriptions saved yet.</p>
+          </div>
+
+          {/* 6. Doctor Summary */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <Activity className="w-3.5 h-3.5 text-slate-400" />
+              <span>Gemini AI Doctor Summary</span>
+            </h4>
+            <div className="bg-slate-50 border border-slate-150 rounded-2xl p-5">
+              <p className="text-xs text-slate-700 leading-relaxed font-semibold whitespace-pre-line">
+                {report.doctorSummary || report.geminiAnalysis?.doctorSummary || 'No clinician-specific summary compiled.'}
+              </p>
             </div>
-          )}
+          </div>
+
+          {/* 7. Current Status */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <span>Current Report Status</span>
+            </h4>
+            <div className="flex items-center gap-2.5 p-4 rounded-2xl bg-amber-50/50 border border-amber-100 text-amber-800 text-xs font-semibold">
+              <Clock className="w-4.5 h-4.5 text-amber-500 animate-pulse" />
+              <span>This report is currently <strong className="font-bold">{report.status || 'Pending Doctor Review'}</strong> and visible in your clinical queue.</span>
+            </div>
+          </div>
+
         </div>
 
-        {/* Action Buttons Footer */}
-        <div className="p-6 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50/50 sticky bottom-0">
+        {/* Action Buttons Footer (Sticky) */}
+        <div className="p-6 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/50 sticky bottom-0 rounded-b-[2.5rem]">
+          {/* Reject button on left */}
           <button
             type="button"
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 transition-all text-xs font-bold cursor-pointer"
+            disabled={isRejecting}
+            onClick={handleRejectClick}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors text-xs font-bold cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
-            Close Profile
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+            <span>{isRejecting ? 'Rejecting...' : 'Reject Report'}</span>
           </button>
 
-          {patient.status !== 'Completed' && onStartConsultation && (
+          {/* Close/Return and Start Consult on right */}
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 transition-colors text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-slate-400" />
+              <span>Return</span>
+            </button>
+
             <button
               type="button"
               onClick={() => {
                 onClose();
-                onStartConsultation(patient);
+                onStartConsultation(report);
               }}
-              className="px-5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-purple-500/10"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/10"
             >
               <Stethoscope className="w-3.5 h-3.5" />
-              <span>
-                {patient.status === 'In Consultation' ? 'Resume Consultation' : 'Start Consultation'}
-              </span>
+              <span>Start Consultation</span>
             </button>
-          )}
+          </div>
         </div>
       </motion.div>
     </div>

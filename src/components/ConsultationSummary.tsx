@@ -24,6 +24,7 @@ interface ConsultationSummaryProps {
   onEdit: () => void;
   onApprove: () => void;
   onReturnToQueue: () => void;
+  onViewCompletedReports?: () => void;
 }
 
 export default function ConsultationSummary({
@@ -31,7 +32,8 @@ export default function ConsultationSummary({
   record,
   onEdit,
   onApprove,
-  onReturnToQueue
+  onReturnToQueue,
+  onViewCompletedReports
 }: ConsultationSummaryProps) {
   const [isApproved, setIsApproved] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -47,14 +49,14 @@ export default function ConsultationSummary({
   const SOAP = {
     subjective: {
       chiefComplaint: subjectiveComplaint || 'Routine health review.',
-      historyPresentIllness: `Patient is a ${patient.age}-year-old ${patient.gender.toLowerCase()} presenting with symptoms of ${subjectiveComplaint || 'general illness'}. History as reported: ${subjectiveHistory}.`,
+      historyPresentIllness: record.soapNotes?.subjective || `Patient is a ${patient.age}-year-old ${patient.gender.toLowerCase()} presenting with symptoms of ${subjectiveComplaint || 'general illness'}. History as reported: ${subjectiveHistory}.`,
       pastMedicalHistory: medicalHistoryFormatted,
       allergies: 'No known drug allergies (NKDA).',
       socialHistory: `Village: ${patient.village}. Referred by: ${patient.referredBy}.`
     },
     objective: {
-      vitals: `BP: ${patient.vitals.bpSystolic}/${patient.vitals.bpDiastolic} mmHg; Pulse: ${patient.vitals.pulse} BPM; Temp: ${patient.vitals.temperature}°F; Blood Sugar: ${patient.vitals.bloodSugar} mg/dL; Weight: ${patient.vitals.weight} kg.`,
-      physicalExam: record.observations?.trim() || `GENERAL: Alert, cooperative, oriented x 3, in no acute distress.
+      vitals: `BP: ${patient.vitals.bpSystolic}/${patient.vitals.bpDiastolic} mmHg; Pulse: ${patient.vitals.pulse} BPM; Temp: ${patient.vitals.temperature}°F; Weight: ${patient.vitals.weight} kg.`,
+      physicalExam: record.soapNotes?.objective || record.observations?.trim() || `GENERAL: Alert, cooperative, oriented x 3, in no acute distress.
 HEENT: Normocephalic, atraumatic. Pupils equal, round, reactive to light.
 CARDIAC: Regular rate and rhythm, normal S1/S2, no murmurs, rubs, or gallops.
 RESPIRATORY: Clear to auscultation bilaterally, equal air entry. No wheezing or crackles.
@@ -63,13 +65,13 @@ EXTREMITIES: Bilateral lower extremities evaluated for edema (${patient.symptoms
     },
     assessment: {
       primaryDiagnosis: record.diagnosis?.trim() || 'Acute Outpatient Symptom Complex',
-      clinicalImpression: `Based on a BP of ${patient.vitals.bpSystolic}/${patient.vitals.bpDiastolic} and symptoms including ${subjectiveComplaint}, clinical findings point towards ${record.diagnosis || 'unspecified viral or cardiovascular etiology'}. Risk Level categorized as ${patient.riskLevel} due to acute symptoms and triage readings.`
+      clinicalImpression: record.soapNotes?.assessment || `Based on a BP of ${patient.vitals.bpSystolic}/${patient.vitals.bpDiastolic} and symptoms including ${subjectiveComplaint}, clinical findings point towards ${record.diagnosis || 'unspecified viral or cardiovascular etiology'}. Risk Level categorized as ${patient.riskLevel} due to acute symptoms and triage readings.`
     },
     plan: {
       therapeutics: record.prescription && record.prescription.length > 0 
         ? record.prescription.map(p => `${p.name} (${p.dosage}) - ${p.frequency}, ${p.timing}`).join('; ')
         : 'No pharmacological therapeutics prescribed. Advised supportive/symptomatic home care.',
-      interventions: record.advice?.trim() || 'Restrict strenuous activity. Maintain adequate hydration. Take prescribed medications regularly.',
+      interventions: record.soapNotes?.plan || record.advice?.trim() || 'Restrict strenuous activity. Maintain adequate hydration. Take prescribed medications regularly.',
       followUp: `Schedule formal clinical reassessment on ${record.followUpDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}.`,
       emergencyWarnings: 'RETURN IMMEDIATELY if you experience high fever, severe unremitting headache, visual disturbances, shortness of breath, chest pain, or rapid swelling of face/extremities.'
     }
@@ -126,6 +128,44 @@ EXTREMITIES: Bilateral lower extremities evaluated for edema (${patient.symptoms
           </span>
         </div>
       </div>
+
+      {isApproved && (
+        <motion.div
+          initial={{ opacity: 0, y: -10, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="bg-emerald-50 border border-emerald-150 rounded-[2rem] p-6 text-emerald-900 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm pl-8 print:hidden"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
+              <CheckCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-display font-black text-emerald-950">
+                Consultation Completed Successfully
+              </h3>
+              <p className="text-xs text-emerald-700 font-medium mt-0.5 leading-normal">
+                The clinical SOAP note has been cryptographically signed and archived to the secure Firestore database.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+            <button
+              onClick={onReturnToQueue}
+              className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-xl text-xs font-bold transition-all border border-emerald-200 cursor-pointer w-full md:w-auto"
+            >
+              Return to Queue
+            </button>
+            {onViewCompletedReports && (
+              <button
+                onClick={onViewCompletedReports}
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm shadow-emerald-700/10 w-full md:w-auto"
+              >
+                View Completed Reports
+              </button>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* Hospital Document Outer Card (Material Design 3 styled clinical record) */}
       <div 
