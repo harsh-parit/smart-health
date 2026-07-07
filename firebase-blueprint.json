@@ -79,6 +79,43 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+    "user": {
+      "title": "user",
+      "description": "An authenticated user profile storing their authorization role and other identity details.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["citizen", "asha", "doctor", "districtOfficer"]
+        },
+        "district": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "object"
+        },
+        "lastLogin": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "uid",
+        "name",
+        "email",
+        "role",
+        "createdAt",
+        "lastLogin"
+      ]
     }
   },
   "firestore": {
@@ -87,6 +124,12 @@
         "$ref": "entities/patientReport"
       },
       "description": "Collection of clinical symptom and triage reports submitted by citizens."
+    },
+    "users": {
+      "schema": {
+        "$ref": "entities/user"
+      },
+      "description": "Collection of authenticated user profiles storing role-based authorization."
     }
   }
 }

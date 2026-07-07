@@ -52,6 +52,33 @@ service cloud.firestore {
       && data.status is string && (data.status == 'Pending Doctor Review' || data.status == 'Reviewed' || data.status == 'Completed');
     }
 
+    // Validation helper for users
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role', 'createdAt', 'lastLogin'])
+        && (data.keys().size() == 6 || (data.keys().size() == 7 && data.keys().hasAll(['district'])))
+        && data.uid is string && data.uid == request.auth.uid
+        && data.name is string && data.name.size() <= 200
+        && data.email is string && data.email.size() <= 200
+        && data.role is string && (data.role == 'citizen' || data.role == 'asha' || data.role == 'doctor' || data.role == 'districtOfficer')
+        && (!data.keys().hasAll(['district']) || (data.district is string && data.district.size() <= 200));
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() 
+        && request.auth.uid == userId
+        && isValidId(userId)
+        && isValidUser(incoming())
+        && incoming().createdAt == request.time
+        && incoming().lastLogin == request.time;
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && isValidId(userId)
+        && isValidUser(incoming())
+        && incoming().lastLogin == request.time
+        && incoming().createdAt == existing().createdAt;
+    }
+
     match /patientReports/{reportDocId} {
       // Create is allowed if signed in and incoming matches schema
       allow create: if isSignedIn() 

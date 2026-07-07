@@ -10,9 +10,10 @@ import { ActiveModalType } from '../types';
 
 interface NavbarProps {
   onGetStarted: (type: ActiveModalType) => void;
+  onOpenDemo?: () => void;
 }
 
-export default function Navbar({ onGetStarted }: NavbarProps) {
+export default function Navbar({ onGetStarted, onOpenDemo }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -59,6 +60,15 @@ export default function Navbar({ onGetStarted }: NavbarProps) {
 
           {/* Action Call for Desktop */}
           <div className="hidden md:flex items-center gap-4">
+            {!import.meta.env.PROD && onOpenDemo && (
+              <button
+                onClick={onOpenDemo}
+                className="border border-amber-300 hover:border-amber-400 bg-amber-50/60 hover:bg-amber-50 text-amber-900 font-semibold rounded-full py-2 px-5 text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
+              >
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                <span>Demo Sandbox</span>
+              </button>
+            )}
             <button
               onClick={() => onGetStarted('get-started')}
               className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full py-2 px-5 text-xs flex items-center gap-1.5 shadow-sm shadow-blue-500/10 transition-all active:scale-95 cursor-pointer"
@@ -121,6 +131,18 @@ export default function Navbar({ onGetStarted }: NavbarProps) {
 
               {/* Bottom drawer footer content */}
               <div className="space-y-4">
+                {!import.meta.env.PROD && onOpenDemo && (
+                  <button
+                    onClick={() => {
+                      toggleMenu();
+                      onOpenDemo();
+                    }}
+                    className="w-full border border-amber-300 bg-amber-50 text-amber-900 font-semibold rounded-2xl py-3 text-xs flex items-center justify-center gap-2"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    <span>Demo Sandbox</span>
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     toggleMenu();
