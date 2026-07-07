@@ -53,10 +53,10 @@ export default function Footer() {
             Platform Modules
           </h4>
           <ul className="space-y-3 text-xs font-medium">
-            <li><a href="#features" className="hover:text-white transition-colors">Citizen Symptom Entry</a></li>
-            <li><a href="#features" className="hover:text-white transition-colors">ASHA Field verification</a></li>
-            <li><a href="#features" className="hover:text-white transition-colors">Physician Copilot Core</a></li>
-            <li><a href="#features" className="hover:text-white transition-colors">District Surveillance Map</a></li>
+            <li><a href="#features" className="hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm px-1">Citizen Symptom Entry</a></li>
+            <li><a href="#features" className="hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm px-1">ASHA Field verification</a></li>
+            <li><a href="#features" className="hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm px-1">Physician Copilot Core</a></li>
+            <li><a href="#features" className="hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm px-1">District Surveillance Map</a></li>
           </ul>
         </div>
 
@@ -66,11 +66,17 @@ export default function Footer() {
             Ecosystem Links
           </h4>
           <ul className="space-y-3 text-xs font-medium">
-            <li><a href="#hero" className="hover:text-white transition-colors">Smart Health Proposal</a></li>
-            <li><a href="#how-it-works" className="hover:text-white transition-colors">Process Workflow</a></li>
-            <li><a href="#technology" className="hover:text-white transition-colors">Technology Blueprint</a></li>
+            <li><a href="#hero" className="hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm px-1">Smart Health Proposal</a></li>
+            <li><a href="#how-it-works" className="hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm px-1">Process Workflow</a></li>
+            <li><a href="#technology" className="hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm px-1">Technology Blueprint</a></li>
             <li>
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors inline-flex items-center gap-1.5">
+              <a 
+                href="https://github.com" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="hover:text-white transition-colors inline-flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm px-1"
+                aria-label="GitHub Repository (opens in a new tab)"
+              >
                 <Github className="w-3.5 h-3.5" />
                 <span>GitHub Repository</span>
               </a>

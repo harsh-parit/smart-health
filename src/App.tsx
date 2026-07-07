@@ -3,28 +3,65 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import Navbar from './layouts/Navbar';
-import HeroSection from './features/landing/HeroSection';
-import FeatureCards from './features/landing/FeatureCards';
-import VisionSection from './features/landing/VisionSection';
-import VisionModal from './features/landing/VisionModal';
 import Footer from './layouts/Footer';
-import LoginPage from './pages/LoginPage';
-import RoleSelectionPage from './pages/RoleSelectionPage';
-import CitizenDashboard from './features/citizen/CitizenDashboard';
-import AshaDashboard from './features/asha/AshaDashboard';
-import DoctorDashboard from './features/doctor/DoctorDashboard';
-import DhoDashboard from './features/dho/DhoDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleGuard from './components/RoleGuard';
-import DemoModeModal from './features/demo/DemoModeModal';
-import DemoControlCenter from './features/demo/DemoControlCenter';
 import { AuthorizationService } from './services/AuthorizationService';
 import { ActiveModalType, UserProfile, UserRole } from './types';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { auth } from './lib/firebase';
 import { Activity } from 'lucide-react';
+import { Loading } from './components/Loading';
+
+// High-performance route-based code splitting & Lazy Loading
+const HeroSection = lazy(() => import('./features/landing/HeroSection'));
+const FeatureCards = lazy(() => import('./features/landing/FeatureCards'));
+const VisionSection = lazy(() => import('./features/landing/VisionSection'));
+const VisionModal = lazy(() => import('./features/landing/VisionModal'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RoleSelectionPage = lazy(() => import('./pages/RoleSelectionPage'));
+const CitizenDashboard = lazy(() => import('./features/citizen/CitizenDashboard'));
+const AshaDashboard = lazy(() => import('./features/asha/AshaDashboard'));
+const DoctorDashboard = lazy(() => import('./features/doctor/DoctorDashboard'));
+const DhoDashboard = lazy(() => import('./features/dho/DhoDashboard'));
+const DemoModeModal = lazy(() => import('./features/demo/DemoModeModal'));
+const DemoControlCenter = lazy(() => import('./features/demo/DemoControlCenter'));
+
+// Elegant Dashboard Loading Skeleton component for ultra-smooth layout transitions
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-slate-50/50 p-6 space-y-6 animate-pulse">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="h-6 w-48 bg-slate-200 rounded-md" />
+          <div className="h-4 w-32 bg-slate-100 rounded-md" />
+        </div>
+        <div className="h-10 w-24 bg-slate-200 rounded-full" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="p-6 bg-white rounded-2xl border border-slate-100/80 space-y-3 shadow-xs">
+            <div className="h-4 w-12 bg-slate-200 rounded" />
+            <div className="h-8 w-24 bg-slate-200 rounded" />
+            <div className="h-3 w-36 bg-slate-100 rounded" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 h-96 bg-white rounded-2xl border border-slate-100/80 p-6 space-y-4 shadow-xs">
+          <div className="h-6 w-1/3 bg-slate-200 rounded" />
+          <div className="h-full w-full bg-slate-50 rounded-xl" />
+        </div>
+        <div className="h-96 bg-white rounded-2xl border border-slate-100/80 p-6 space-y-4 shadow-xs">
+          <div className="h-6 w-1/2 bg-slate-200 rounded" />
+          <div className="h-full w-full bg-slate-50 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const [view, setView] = useState<
@@ -258,140 +295,142 @@ export default function App() {
         </div>
       )}
 
-      {view === 'landing' && (
-        <>
-          {/* 1. Responsive Navigation Bar */}
-          <Navbar onGetStarted={handleGetStarted} onOpenDemo={() => setIsDemoOpen(true)} />
+      <Suspense fallback={<DashboardSkeleton />}>
+        {view === 'landing' && (
+          <>
+            {/* 1. Responsive Navigation Bar */}
+            <Navbar onGetStarted={handleGetStarted} onOpenDemo={() => setIsDemoOpen(true)} />
 
-          {/* 2. Hero Section & Dashboard Visualizer */}
-          <HeroSection onGetStarted={handleGetStarted} onOpenDemo={() => setIsDemoOpen(true)} />
+            {/* 2. Hero Section & Dashboard Visualizer */}
+            <HeroSection onGetStarted={handleGetStarted} onOpenDemo={() => setIsDemoOpen(true)} />
 
-          {/* 3. Three Core Solution Feature Cards */}
-          <FeatureCards onSelectFeature={handleOpenModal} />
+            {/* 3. Three Core Solution Feature Cards */}
+            <FeatureCards onSelectFeature={handleOpenModal} />
 
-          {/* 4. Strategic Vision & Technology Specification */}
-          <VisionSection />
+            {/* 4. Strategic Vision & Technology Specification */}
+            <VisionSection />
 
-          {/* 5. Professional Medical / Technical Footer */}
-          <Footer />
+            {/* 5. Professional Medical / Technical Footer */}
+            <Footer />
 
-          {/* 6. Dynamic Onboarding and Specification Dialog Sheet */}
-          <VisionModal 
-            activeModal={activeModal} 
-            onClose={handleCloseModal} 
-            userEmail={user?.email || defaultUserEmail}
+            {/* 6. Dynamic Onboarding and Specification Dialog Sheet */}
+            <VisionModal 
+              activeModal={activeModal} 
+              onClose={handleCloseModal} 
+              userEmail={user?.email || defaultUserEmail}
+            />
+          </>
+        )}
+
+        {view === 'login' && (
+          <LoginPage 
+            onLoginSuccess={() => {
+              // After successful login, if profile loads, useEffect will auto-redirect,
+              // otherwise route to role-selection.
+              setView('role-selection');
+            }} 
+            onBackToLanding={() => setView('landing')} 
           />
-        </>
-      )}
+        )}
 
-      {view === 'login' && (
-        <LoginPage 
-          onLoginSuccess={() => {
-            // After successful login, if profile loads, useEffect will auto-redirect,
-            // otherwise route to role-selection.
-            setView('role-selection');
-          }} 
-          onBackToLanding={() => setView('landing')} 
+        {view === 'role-selection' && (
+          <ProtectedRoute user={user} loading={authLoading} onRedirect={() => setView('login')}>
+            <RoleSelectionPage 
+              onBackToLogin={handleSignOutToLogin} 
+              onLogout={handleSignOutToLanding} 
+              onSelectRole={handleSelectRole}
+            />
+          </ProtectedRoute>
+        )}
+
+        {view === 'citizen-dashboard' && (
+          <ProtectedRoute user={user} loading={authLoading} onRedirect={() => setView('login')}>
+            <RoleGuard 
+              userProfile={userProfile} 
+              allowedRoles={['citizen']} 
+              loading={profileLoading}
+              onNavigateToDashboard={handleNavigateToDashboard}
+              onBackToRoles={() => setView('role-selection')}
+            >
+              <CitizenDashboard 
+                onBackToRoles={() => setView('role-selection')} 
+                onLogout={handleSignOutToLanding} 
+              />
+            </RoleGuard>
+          </ProtectedRoute>
+        )}
+
+        {view === 'asha-dashboard' && (
+          <ProtectedRoute user={user} loading={authLoading} onRedirect={() => setView('login')}>
+            <RoleGuard 
+              userProfile={userProfile} 
+              allowedRoles={['asha']} 
+              loading={profileLoading}
+              onNavigateToDashboard={handleNavigateToDashboard}
+              onBackToRoles={() => setView('role-selection')}
+            >
+              <AshaDashboard 
+                onBackToRoles={() => setView('role-selection')} 
+                onLogout={handleSignOutToLanding} 
+              />
+            </RoleGuard>
+          </ProtectedRoute>
+        )}
+
+        {view === 'doctor-dashboard' && (
+          <ProtectedRoute user={user} loading={authLoading} onRedirect={() => setView('login')}>
+            <RoleGuard 
+              userProfile={userProfile} 
+              allowedRoles={['doctor']} 
+              loading={profileLoading}
+              onNavigateToDashboard={handleNavigateToDashboard}
+              onBackToRoles={() => setView('role-selection')}
+            >
+              <DoctorDashboard 
+                onBackToRoles={() => setView('role-selection')} 
+                onLogout={handleSignOutToLanding} 
+              />
+            </RoleGuard>
+          </ProtectedRoute>
+        )}
+
+        {view === 'dho-dashboard' && (
+          <ProtectedRoute user={user} loading={authLoading} onRedirect={() => setView('login')}>
+            <RoleGuard 
+              userProfile={userProfile} 
+              allowedRoles={['districtOfficer']} 
+              loading={profileLoading}
+              onNavigateToDashboard={handleNavigateToDashboard}
+              onBackToRoles={() => setView('role-selection')}
+            >
+              <DhoDashboard 
+                onBackToRoles={() => setView('role-selection')} 
+                onLogout={handleSignOutToLanding} 
+              />
+            </RoleGuard>
+          </ProtectedRoute>
+        )}
+
+        <DemoModeModal 
+          isOpen={isDemoOpen}
+          onClose={() => setIsDemoOpen(false)}
+          onSelectDemoUser={({ user: demoUser, profile: demoProfile }) => {
+            setIsDemoMode(true);
+            setUser(demoUser);
+            setUserProfile(demoProfile);
+            
+            // Route immediately to the dashboard of the selected role
+            switch (demoProfile.role) {
+              case 'citizen': setView('citizen-dashboard'); break;
+              case 'asha': setView('asha-dashboard'); break;
+              case 'doctor': setView('doctor-dashboard'); break;
+              case 'districtOfficer': setView('dho-dashboard'); break;
+            }
+          }}
         />
-      )}
 
-      {view === 'role-selection' && (
-        <ProtectedRoute user={user} loading={authLoading} onRedirect={() => setView('login')}>
-          <RoleSelectionPage 
-            onBackToLogin={handleSignOutToLogin} 
-            onLogout={handleSignOutToLanding} 
-            onSelectRole={handleSelectRole}
-          />
-        </ProtectedRoute>
-      )}
-
-      {view === 'citizen-dashboard' && (
-        <ProtectedRoute user={user} loading={authLoading} onRedirect={() => setView('login')}>
-          <RoleGuard 
-            userProfile={userProfile} 
-            allowedRoles={['citizen']} 
-            loading={profileLoading}
-            onNavigateToDashboard={handleNavigateToDashboard}
-            onBackToRoles={() => setView('role-selection')}
-          >
-            <CitizenDashboard 
-              onBackToRoles={() => setView('role-selection')} 
-              onLogout={handleSignOutToLanding} 
-            />
-          </RoleGuard>
-        </ProtectedRoute>
-      )}
-
-      {view === 'asha-dashboard' && (
-        <ProtectedRoute user={user} loading={authLoading} onRedirect={() => setView('login')}>
-          <RoleGuard 
-            userProfile={userProfile} 
-            allowedRoles={['asha']} 
-            loading={profileLoading}
-            onNavigateToDashboard={handleNavigateToDashboard}
-            onBackToRoles={() => setView('role-selection')}
-          >
-            <AshaDashboard 
-              onBackToRoles={() => setView('role-selection')} 
-              onLogout={handleSignOutToLanding} 
-            />
-          </RoleGuard>
-        </ProtectedRoute>
-      )}
-
-      {view === 'doctor-dashboard' && (
-        <ProtectedRoute user={user} loading={authLoading} onRedirect={() => setView('login')}>
-          <RoleGuard 
-            userProfile={userProfile} 
-            allowedRoles={['doctor']} 
-            loading={profileLoading}
-            onNavigateToDashboard={handleNavigateToDashboard}
-            onBackToRoles={() => setView('role-selection')}
-          >
-            <DoctorDashboard 
-              onBackToRoles={() => setView('role-selection')} 
-              onLogout={handleSignOutToLanding} 
-            />
-          </RoleGuard>
-        </ProtectedRoute>
-      )}
-
-      {view === 'dho-dashboard' && (
-        <ProtectedRoute user={user} loading={authLoading} onRedirect={() => setView('login')}>
-          <RoleGuard 
-            userProfile={userProfile} 
-            allowedRoles={['districtOfficer']} 
-            loading={profileLoading}
-            onNavigateToDashboard={handleNavigateToDashboard}
-            onBackToRoles={() => setView('role-selection')}
-          >
-            <DhoDashboard 
-              onBackToRoles={() => setView('role-selection')} 
-              onLogout={handleSignOutToLanding} 
-            />
-          </RoleGuard>
-        </ProtectedRoute>
-      )}
-
-      <DemoModeModal 
-        isOpen={isDemoOpen}
-        onClose={() => setIsDemoOpen(false)}
-        onSelectDemoUser={({ user: demoUser, profile: demoProfile }) => {
-          setIsDemoMode(true);
-          setUser(demoUser);
-          setUserProfile(demoProfile);
-          
-          // Route immediately to the dashboard of the selected role
-          switch (demoProfile.role) {
-            case 'citizen': setView('citizen-dashboard'); break;
-            case 'asha': setView('asha-dashboard'); break;
-            case 'doctor': setView('doctor-dashboard'); break;
-            case 'districtOfficer': setView('dho-dashboard'); break;
-          }
-        }}
-      />
-
-      {isDemoMode && <DemoControlCenter />}
+        {isDemoMode && <DemoControlCenter />}
+      </Suspense>
     </div>
   );
 }

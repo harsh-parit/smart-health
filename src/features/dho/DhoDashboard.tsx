@@ -432,8 +432,8 @@ export default function DhoDashboard({ onBackToRoles, onLogout }: DhoDashboardPr
     }
   }, [liveMetrics]);
 
-  // Dynamic Multi-Dimensional Health Analytics Dataset Generator (No Firebase/AI)
-  const getDashboardAnalyticsData = () => {
+  // Dynamic Multi-Dimensional Health Analytics Dataset Generator (No Firebase/AI) - Memoized for Performance
+  const rawAd = useMemo(() => {
     const multiplier = analyticsBlockFilter === 'All' ? 1.0 :
                        analyticsBlockFilter === 'Datia' ? 0.38 :
                        analyticsBlockFilter === 'Bhander' ? 0.21 :
@@ -707,9 +707,8 @@ export default function DhoDashboard({ onBackToRoles, onLogout }: DhoDashboardPr
         ]
       };
     }
-  };
+  }, [analyticsBlockFilter, analyticsTimeFilter]);
 
-  const rawAd = getDashboardAnalyticsData();
   const ad = useMemo(() => {
     if (!liveMetrics) return rawAd;
     
@@ -751,6 +750,37 @@ export default function DhoDashboard({ onBackToRoles, onLogout }: DhoDashboardPr
       diseasePieData: liveDiseasePieData.length > 0 ? liveDiseasePieData : rawAd.diseasePieData
     };
   }, [rawAd, liveMetrics]);
+
+  // Memoized lists to prevent heavy calculations on every keystroke/render
+  const filteredAlerts = useMemo(() => {
+    return alerts.filter(alertItem => {
+      const matchesSearch = 
+        alertItem.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        alertItem.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        alertItem.village.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        alertItem.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesRisk = 
+        riskFilter === 'All' || 
+        alertItem.severity.toLowerCase() === riskFilter.toLowerCase();
+      return matchesSearch && matchesRisk;
+    });
+  }, [alerts, searchQuery, riskFilter]);
+
+  const filteredHighRiskPatients = useMemo(() => {
+    return highRiskPatients.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.village.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesRisk = riskFilter === 'All' || p.status === riskFilter;
+      return matchesSearch && matchesRisk;
+    });
+  }, [highRiskPatients, searchQuery, riskFilter]);
+
+  const filteredMedicineInventory = useMemo(() => {
+    return medicineInventory.filter(m => {
+      const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.id.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = categoryFilter === 'All' || m.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [medicineInventory, searchQuery, categoryFilter]);
 
   // Calculated Stats dynamically derived from real state!
   const statTotalPatients = liveMetrics ? liveMetrics.reports.length : 1482;
@@ -2362,19 +2392,7 @@ export default function DhoDashboard({ onBackToRoles, onLogout }: DhoDashboardPr
               /* Outbreak Alert Grid */
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {alerts
-                    .filter(alertItem => {
-                      const matchesSearch = 
-                        alertItem.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        alertItem.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        alertItem.village.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        alertItem.category.toLowerCase().includes(searchQuery.toLowerCase());
-                      const matchesRisk = 
-                        riskFilter === 'All' || 
-                        alertItem.severity.toLowerCase() === riskFilter.toLowerCase();
-                      return matchesSearch && matchesRisk;
-                    })
-                    .map((alertItem) => {
+                  {filteredAlerts.map((alertItem) => {
                       let severityColors = {
                         bg: 'bg-rose-50/20 hover:bg-rose-50/45 border-rose-200/50',
                         badge: 'bg-rose-100 text-rose-800 border-rose-200/45',
@@ -2505,17 +2523,7 @@ export default function DhoDashboard({ onBackToRoles, onLogout }: DhoDashboardPr
                       );
                     })}
 
-                  {alerts.filter(alertItem => {
-                    const matchesSearch = 
-                      alertItem.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                      alertItem.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      alertItem.village.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      alertItem.category.toLowerCase().includes(searchQuery.toLowerCase());
-                    const matchesRisk = 
-                      riskFilter === 'All' || 
-                      alertItem.severity.toLowerCase() === riskFilter.toLowerCase();
-                    return matchesSearch && matchesRisk;
-                  }).length === 0 && (
+                  {filteredAlerts.length === 0 && (
                     <div className="col-span-1 md:col-span-2 bg-white border border-orange-100/30 rounded-[2rem] p-12 text-center text-slate-400">
                       <div className="flex flex-col items-center justify-center space-y-2">
                         <CheckCircle2 className="w-12 h-12 text-slate-200" />
@@ -2544,13 +2552,7 @@ export default function DhoDashboard({ onBackToRoles, onLogout }: DhoDashboardPr
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
-                        {highRiskPatients
-                          .filter(p => {
-                            const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.village.toLowerCase().includes(searchQuery.toLowerCase());
-                            const matchesRisk = riskFilter === 'All' || p.status === riskFilter;
-                            return matchesSearch && matchesRisk;
-                          })
-                          .map((p) => (
+                        {filteredHighRiskPatients.map((p) => (
                             <tr 
                               key={p.id} 
                               className={`hover:bg-orange-50/10 transition-colors ${p.flowStatus === 'Resolved' ? 'bg-slate-50/40 opacity-60' : ''}`}
@@ -2652,11 +2654,7 @@ export default function DhoDashboard({ onBackToRoles, onLogout }: DhoDashboardPr
                               </td>
                             </tr>
                           ))}
-                        {highRiskPatients.filter(p => {
-                          const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.village.toLowerCase().includes(searchQuery.toLowerCase());
-                          const matchesRisk = riskFilter === 'All' || p.status === riskFilter;
-                          return matchesSearch && matchesRisk;
-                        }).length === 0 && (
+                        {filteredHighRiskPatients.length === 0 && (
                           <tr>
                             <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
                               <div className="flex flex-col items-center justify-center space-y-2">
@@ -2755,13 +2753,7 @@ export default function DhoDashboard({ onBackToRoles, onLogout }: DhoDashboardPr
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
-                    {medicineInventory
-                      .filter(m => {
-                        const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.id.toLowerCase().includes(searchQuery.toLowerCase());
-                        const matchesCategory = categoryFilter === 'All' || m.category === categoryFilter;
-                        return matchesSearch && matchesCategory;
-                      })
-                      .map((m) => (
+                    {filteredMedicineInventory.map((m) => (
                         <tr key={m.id} className="hover:bg-orange-50/10 transition-colors">
                           <td className="px-6 py-4">
                             <div>

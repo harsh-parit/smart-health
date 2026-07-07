@@ -47,7 +47,11 @@ export default function Navbar({ onGetStarted, onOpenDemo }: NavbarProps) {
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           
           {/* Logo & Brand Name */}
-          <a href="#" className="flex items-center gap-3 group">
+          <a 
+            href="#" 
+            className="flex items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-xl"
+            aria-label="Smart Health AI Homepage"
+          >
             <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white relative shadow-md shadow-blue-500/15 group-hover:scale-105 transition-all">
               <Activity className="w-5.5 h-5.5" />
               <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-white animate-pulse" />
@@ -63,12 +67,12 @@ export default function Navbar({ onGetStarted, onOpenDemo }: NavbarProps) {
           </a>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-7">
+          <nav className="hidden md:flex items-center gap-7" aria-label="Main Navigation">
             {navLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
-                className="text-xs font-semibold text-slate-600 hover:text-blue-600 transition-colors tracking-wide font-sans relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[2px] after:bg-blue-600 hover:after:w-full after:transition-all after:duration-250"
+                className="text-xs font-semibold text-slate-600 hover:text-blue-600 transition-colors tracking-wide font-sans relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[2px] after:bg-blue-600 hover:after:w-full after:transition-all after:duration-250 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-md px-1"
               >
                 {link.name}
               </a>
@@ -78,10 +82,11 @@ export default function Navbar({ onGetStarted, onOpenDemo }: NavbarProps) {
           {/* Action Call buttons for Desktop */}
           <div className="hidden md:flex items-center gap-3.5">
             <a
-              href="https://github.com"
+              href="https://github.com/harsh-parit/smart-health"
               target="_blank"
               rel="noopener noreferrer"
-              className="border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl py-2 px-4 text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+              className="border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl py-2 px-4 text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              aria-label="GitHub Repository (opens in a new tab)"
             >
               <Github className="w-4 h-4" />
               <span>GitHub</span>
@@ -90,7 +95,8 @@ export default function Navbar({ onGetStarted, onOpenDemo }: NavbarProps) {
             {!import.meta.env.PROD && onOpenDemo && (
               <button
                 onClick={onOpenDemo}
-                className="border border-amber-300 hover:border-amber-400 bg-amber-50/60 hover:bg-amber-50 text-amber-900 font-bold rounded-xl py-2 px-4 text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+                className="border border-amber-300 hover:border-amber-400 bg-amber-50/60 hover:bg-amber-50 text-amber-900 font-bold rounded-xl py-2 px-4 text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+                aria-label="Launch Demo Sandbox"
               >
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                 <span>Sandbox</span>
@@ -99,9 +105,10 @@ export default function Navbar({ onGetStarted, onOpenDemo }: NavbarProps) {
 
             <button
               onClick={() => onGetStarted('get-started')}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl py-2 px-5 text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/10 transition-all active:scale-95 cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl py-2 px-5 text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/10 transition-all active:scale-95 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              aria-label="Get Started with onboarding"
             >
-              <span>Get Started</span>
+              <span>Login</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -109,8 +116,9 @@ export default function Navbar({ onGetStarted, onOpenDemo }: NavbarProps) {
           {/* Hamburger Menu Trigger for Mobile */}
           <button
             onClick={toggleMenu}
-            className="md:hidden p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
-            aria-label="Toggle navigation menu"
+            className="md:hidden p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isOpen}
           >
             {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -190,7 +198,7 @@ export default function Navbar({ onGetStarted, onOpenDemo }: NavbarProps) {
                   }}
                   className="w-full bg-blue-600 text-white font-bold rounded-xl py-3 text-xs flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>Get Started</span>
+                  <span>Login</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 

@@ -22,10 +22,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           className={`w-full bg-slate-50 border ${
-            error ? 'border-red-500 focus:border-red-500 focus:ring-red-100' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-100'
-          } rounded-xl px-4 py-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-4 focus:bg-white transition-all duration-200 ${
+            error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/20'
+          } rounded-xl px-4 py-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:bg-white transition-all duration-200 ${
             leftIcon ? 'pl-10' : ''
           } ${className}`}
+          aria-invalid={error ? 'true' : 'false'}
           {...props}
         />
       </div>
@@ -42,6 +43,7 @@ interface FormFieldProps {
   required?: boolean;
   children: React.ReactNode;
   className?: string;
+  htmlFor?: string;
 }
 
 export const FormField: React.FC<FormFieldProps> = ({
@@ -50,17 +52,21 @@ export const FormField: React.FC<FormFieldProps> = ({
   helperText,
   required,
   children,
-  className = ''
+  className = '',
+  htmlFor
 }) => {
   return (
     <div className={`space-y-1.5 text-left ${className}`}>
-      <label className="text-xs font-bold text-slate-700 tracking-wide flex items-center gap-0.5">
+      <label 
+        htmlFor={htmlFor}
+        className="text-xs font-bold text-slate-700 tracking-wide flex items-center gap-0.5 cursor-pointer"
+      >
         <span>{label}</span>
-        {required && <span className="text-red-500 font-bold">*</span>}
+        {required && <span className="text-red-500 font-bold" aria-hidden="true">*</span>}
       </label>
       {children}
       {error ? (
-        <p className="text-[10px] font-bold text-red-500 font-sans tracking-wide mt-1">
+        <p className="text-[10px] font-bold text-red-500 font-sans tracking-wide mt-1" role="alert">
           {error}
         </p>
       ) : helperText ? (
@@ -82,8 +88,9 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       <select
         ref={ref}
         className={`w-full bg-slate-50 border ${
-          error ? 'border-red-500 focus:border-red-500 focus:ring-red-100' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-100'
-        } rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-hidden focus:ring-4 focus:bg-white transition-all duration-200 cursor-pointer ${className}`}
+          error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/20'
+        } rounded-xl px-4 py-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:bg-white transition-all duration-200 cursor-pointer ${className}`}
+        aria-invalid={error ? 'true' : 'false'}
         {...props}
       >
         {children}
@@ -104,8 +111,9 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       <textarea
         ref={ref}
         className={`w-full bg-slate-50 border ${
-          error ? 'border-red-500 focus:border-red-500 focus:ring-red-100' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-100'
-        } rounded-xl px-4 py-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-4 focus:bg-white transition-all duration-200 min-h-[100px] resize-y ${className}`}
+          error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/20'
+        } rounded-xl px-4 py-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:bg-white transition-all duration-200 min-h-[100px] resize-y ${className}`}
+        aria-invalid={error ? 'true' : 'false'}
         {...props}
       />
     );

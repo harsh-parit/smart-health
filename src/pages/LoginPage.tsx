@@ -96,8 +96,9 @@ export default function LoginPage({ onLoginSuccess, onBackToLanding }: LoginPage
         {/* Back Link Button */}
         <button
           onClick={onBackToLanding}
-          className="absolute top-6 left-6 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all flex items-center justify-center"
+          className="absolute top-6 left-6 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           title="Back to Landing Page"
+          aria-label="Back to Landing Page"
           disabled={loading}
         >
           <ArrowLeft className="w-5 h-5" />
@@ -138,7 +139,10 @@ export default function LoginPage({ onLoginSuccess, onBackToLanding }: LoginPage
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email field */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider pl-1 block">
+            <label 
+              htmlFor="email-input"
+              className="text-xs font-semibold text-slate-500 uppercase tracking-wider pl-1 block cursor-pointer"
+            >
               Email Address
             </label>
             <div className="relative">
@@ -146,13 +150,14 @@ export default function LoginPage({ onLoginSuccess, onBackToLanding }: LoginPage
                 <Mail className="w-4 h-4" />
               </span>
               <input
+                id="email-input"
                 type="email"
                 required
                 disabled={loading}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="doctor@smarthealth.org"
-                className="w-full bg-slate-50/40 hover:bg-slate-50/80 border border-slate-100 hover:border-slate-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 rounded-2xl pl-10 pr-4 py-3 text-sm transition-all outline-none text-slate-800 font-sans disabled:opacity-60"
+                className="w-full bg-slate-50/40 hover:bg-slate-50/80 border border-slate-100 hover:border-slate-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 rounded-2xl pl-10 pr-4 py-3 text-sm transition-all outline-none text-slate-800 font-sans disabled:opacity-60"
               />
             </div>
           </div>
@@ -160,7 +165,10 @@ export default function LoginPage({ onLoginSuccess, onBackToLanding }: LoginPage
           {/* Password field */}
           <div className="space-y-1">
             <div className="flex justify-between items-center px-1">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+              <label 
+                htmlFor="password-input"
+                className="text-xs font-semibold text-slate-500 uppercase tracking-wider block cursor-pointer"
+              >
                 Password
               </label>
               {!isSignUp && (
@@ -170,7 +178,7 @@ export default function LoginPage({ onLoginSuccess, onBackToLanding }: LoginPage
                     e.preventDefault();
                     setError('To reset your password, contact administrative IT support.');
                   }}
-                  className="text-xs font-semibold text-blue-600 hover:underline"
+                  className="text-xs font-semibold text-blue-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm px-1"
                 >
                   Forgot Password?
                 </a>
@@ -181,13 +189,14 @@ export default function LoginPage({ onLoginSuccess, onBackToLanding }: LoginPage
                 <Lock className="w-4 h-4" />
               </span>
               <input
+                id="password-input"
                 type="password"
                 required
                 disabled={loading}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-slate-50/40 hover:bg-slate-50/80 border border-slate-100 hover:border-slate-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 rounded-2xl pl-10 pr-4 py-3 text-sm transition-all outline-none text-slate-800 font-sans disabled:opacity-60"
+                className="w-full bg-slate-50/40 hover:bg-slate-50/80 border border-slate-100 hover:border-slate-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 rounded-2xl pl-10 pr-4 py-3 text-sm transition-all outline-none text-slate-800 font-sans disabled:opacity-60"
               />
             </div>
           </div>
@@ -196,7 +205,7 @@ export default function LoginPage({ onLoginSuccess, onBackToLanding }: LoginPage
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold rounded-2xl py-3.5 px-4 text-sm transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-2 mt-2 cursor-pointer disabled:opacity-50"
+            className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold rounded-2xl py-3.5 px-4 text-sm transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-2 mt-2 cursor-pointer disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
           >
             {loading ? (
               <span className="flex items-center gap-2">
@@ -227,7 +236,7 @@ export default function LoginPage({ onLoginSuccess, onBackToLanding }: LoginPage
           type="button"
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full bg-white hover:bg-slate-50 border border-slate-200 active:scale-[0.98] text-slate-700 font-semibold rounded-2xl py-3 px-4 text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
+          className="w-full bg-white hover:bg-slate-50 border border-slate-200 active:scale-[0.98] text-slate-700 font-semibold rounded-2xl py-3 px-4 text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
         >
           {/* Custom vector-styled Google logo representation */}
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">

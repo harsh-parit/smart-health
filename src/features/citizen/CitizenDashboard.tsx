@@ -1349,6 +1349,7 @@ export default function CitizenDashboard({ onBackToRoles, onLogout }: CitizenDas
                           <img
                             src={URL.createObjectURL(selectedFile)}
                             alt="Prescription preview"
+                            loading="lazy"
                             referrerPolicy="no-referrer"
                             className="max-h-[200px] object-contain rounded-lg"
                           />
